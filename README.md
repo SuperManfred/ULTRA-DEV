@@ -8,7 +8,7 @@ Multiple agent clusters running in parallel:
 - Each cluster works on one GitHub issue
 - Each cluster isolated in its own git worktree
 - Each cluster verifies its own work before claiming done
-- Agents cannot touch anything outside their worktree
+- Agents cannot accidentally touch files outside their worktree (Read/Write/Edit blocked; Bash not restricted)
 - No human babysitting required for correct results
 
 ## Current Structure
@@ -70,5 +70,5 @@ Automates worktree creation + agent spawning. Not yet implemented.
 
 ## Future (No Spec Yet)
 
-- Role templates (implementer, reviewers)
 - Coordination protocols (how agents communicate within a cluster)
+- Iteration loops (reviewer rejects → implementer fixes → re-review)
