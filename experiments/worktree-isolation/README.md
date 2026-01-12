@@ -39,9 +39,9 @@ The Task tool spawns subagents within the same process. They can't have differen
 4. Instruct it to read/write files outside the worktree (should be blocked)
 
 **Success Criteria**:
-- [ ] Operations inside worktree: APPROVED by hook
-- [ ] Operations outside worktree: BLOCKED by hook with clear error message
-- [ ] The blocking is deterministic (not instruction-dependent)
+- [x] Operations inside worktree: APPROVED by hook
+- [x] Operations outside worktree: BLOCKED by hook with clear error message
+- [x] The blocking is deterministic (not instruction-dependent)
 
 ### Phase 2: Orchestrator Spawns Sub-Agent
 
@@ -54,10 +54,10 @@ The Task tool spawns subagents within the same process. They can't have differen
 4. Check if sub-agent was restricted
 
 **Success Criteria**:
-- [ ] Sub-agent session starts successfully
-- [ ] Sub-agent can operate inside worktree
-- [ ] Sub-agent cannot operate outside worktree (hook blocks)
-- [ ] Output captured to file
+- [x] Sub-agent session starts successfully
+- [x] Sub-agent can operate inside worktree
+- [x] Sub-agent cannot operate outside worktree (hook blocks)
+- [x] Output captured to file
 
 ### Phase 3: Full Parallel Test
 
@@ -70,19 +70,19 @@ The Task tool spawns subagents within the same process. They can't have differen
 4. Verify isolation
 
 **Success Criteria**:
-- [ ] 3 worktrees created: ULTRA-DEV-wt-a, ULTRA-DEV-wt-b, ULTRA-DEV-wt-c
-- [ ] Each worktree has expected file(s) created
-- [ ] No files modified in wrong worktrees
-- [ ] No files modified in main ULTRA-DEV
-- [ ] Commits on correct branches (experiment/a, experiment/b, experiment/c)
+- [x] 3 worktrees created: ULTRA-DEV-wt-a, ULTRA-DEV-wt-b, ULTRA-DEV-wt-c
+- [x] Each worktree has expected file(s) created
+- [x] No files modified in wrong worktrees
+- [x] No files modified in main ULTRA-DEV
+- [ ] Commits on correct branches (experiment/a, experiment/b, experiment/c) - not tested, agents created files only
 
 ---
 
 ## Current Status
 
-- [ ] Phase 1: Not started
-- [ ] Phase 2: Not started
-- [ ] Phase 3: Not started
+- [x] Phase 1: PASSED (5/5 tests)
+- [x] Phase 2: PASSED
+- [x] Phase 3: PASSED (no cross-contamination)
 
 ---
 
