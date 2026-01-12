@@ -16,15 +16,17 @@ Multiple agent clusters running in parallel:
 ```
 ULTRA-DEV/
 ├── hooks/
-│   └── enforce-worktree        # PreToolUse hook - blocks operations outside WORKTREE_ROOT
+│   └── enforce-worktree            # PreToolUse hook - blocks ops outside WORKTREE_ROOT
 ├── docs/
-│   └── experimentation-principles.md
+│   ├── experimentation-principles.md
+│   ├── claims-evidence-limits.md   # What's proven, with evidence and limitations
+│   └── spawn-cluster-spec.md       # Spec for next build target
 ├── experiments/
-│   └── worktree-isolation/     # Phased testing of isolation mechanism
-│       ├── phase-1/            # Hook enforcement - PASSED
-│       ├── phase-2/            # Sub-agent spawning - PASSED
-│       └── phase-3/            # Parallel execution - PASSED
-└── prompts/                    # Saved prompts for traceability
+│   └── worktree-isolation/         # Phased testing - ALL PASSED
+│       ├── phase-1/                # Hook enforcement
+│       ├── phase-2/                # Sub-agent spawning
+│       └── phase-3/                # Parallel execution
+└── prompts/                        # Saved prompts for traceability
 ```
 
 ## Key Mechanism: Environment-Based Isolation
@@ -60,10 +62,13 @@ An orchestrator can:
 3. Those sub-agents are automatically restricted to the worktree
 4. Multiple orchestrators can run in parallel without interference
 
-## Not Yet Built
+## Next: spawn-cluster
 
-- spawn-cluster script (automate worktree creation + agent spawning)
+Spec written: `docs/spawn-cluster-spec.md`
+
+Automates worktree creation + agent spawning. Not yet implemented.
+
+## Future (No Spec Yet)
+
 - Role templates (implementer, reviewers)
 - Coordination protocols (how agents communicate within a cluster)
-
-These will be created when we have precise, documented plans for them.
