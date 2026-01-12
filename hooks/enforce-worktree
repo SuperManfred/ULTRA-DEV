@@ -1,0 +1,74 @@
+#!/bin/bash
+# enforce-worktree: PreToolUse hook for worktree isolation
+#
+# If WORKTREE_ROOT is set, blocks file operations outside that path.
+# If WORKTREE_ROOT is not set, approves everything (normal session).
+#
+# Usage: Add to ~/.claude/settings.json PreToolUse hooks
+
+set -euo pipefail
+
+input=$(cat)
+tool=$(echo "$input" | jq -r '.tool_name')
+
+# If no WORKTREE_ROOT set, this is a normal session - approve everything
+if [[ -z "${WORKTREE_ROOT:-}" ]]; then
+  echo '{"decision": "approve"}'
+  exit 0
+fi
+
+# Tools that operate on file paths
+case "$tool" in
+  Edit|Write|Read)
+    target_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
+    ;;
+  Bash)
+    # For Bash, we can't reliably parse all possible commands
+    # But we can check for obvious violations in the command string
+    command=$(echo "$input" | jq -r '.tool_input.command // empty')
+
+    # Check for cd to outside worktree
+    if echo "$command" | grep -qE "^\s*cd\s+" && ! echo "$command" | grep -qF "$WORKTREE_ROOT"; then
+      # cd command that doesn't reference worktree - could be violation
+      # But this is tricky - allow for now, tighten later if needed
+      echo '{"decision": "approve"}'
+      exit 0
+    fi
+
+    # For now, approve Bash - git operations are the main risk
+    # TODO: Add git-specific checks
+    echo '{"decision": "approve"}'
+    exit 0
+    ;;
+  *)
+    # Unknown tool - approve
+    echo '{"decision": "approve"}'
+    exit 0
+    ;;
+esac
+
+# If we have a target path, check it
+if [[ -n "$target_path" ]]; then
+  # Resolve to absolute path
+  if [[ "$target_path" != /* ]]; then
+    # Relative path - resolve from cwd
+    cwd=$(echo "$input" | jq -r '.cwd // empty')
+    if [[ -n "$cwd" ]]; then
+      target_path="$cwd/$target_path"
+    fi
+  fi
+
+  # Normalize path (resolve .., symlinks)
+  resolved_path=$(realpath -m "$target_path" 2>/dev/null || echo "$target_path")
+  resolved_worktree=$(realpath -m "$WORKTREE_ROOT" 2>/dev/null || echo "$WORKTREE_ROOT")
+
+  # Check if target is within worktree
+  if [[ "$resolved_path" == "$resolved_worktree"* ]]; then
+    echo '{"decision": "approve"}'
+  else
+    echo "{\"decision\": \"block\", \"reason\": \"Path $target_path is outside worktree boundary $WORKTREE_ROOT\"}"
+  fi
+else
+  # No path to check - approve
+  echo '{"decision": "approve"}'
+fi
