@@ -1,0 +1,52 @@
+#!/bin/bash
+#
+# orchestrate - Run an orchestrator for a GitHub issue
+#
+# Usage: orchestrate <issue-number>
+#
+# This spawns a Claude session that acts as an orchestrator,
+# driving the full tension architecture loop for the given issue.
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -z "$1" ]; then
+    echo "Usage: orchestrate <issue-number>"
+    echo ""
+    echo "Example: orchestrate 123"
+    exit 1
+fi
+
+ISSUE_NUMBER="$1"
+
+# Check if issue exists
+if ! gh issue view "$ISSUE_NUMBER" --repo "$(gh repo view --json nameWithOwner -q .nameWithOwner)" &>/dev/null; then
+    echo "Error: Issue #$ISSUE_NUMBER not found or not accessible"
+    exit 1
+fi
+
+# Read orchestrator prompt and substitute issue number
+ORCHESTRATOR_PROMPT=$(cat "$REPO_ROOT/prompts/orchestrator.md" | sed "s/ISSUE_NUMBER/$ISSUE_NUMBER/g")
+
+echo "Starting orchestrator for issue #$ISSUE_NUMBER..."
+echo ""
+echo "Worktree will be created at: $REPO_ROOT/../ULTRA-DEV-wt-$ISSUE_NUMBER"
+echo ""
+
+# Run the orchestrator
+# Note: The orchestrator will create the worktree, spawn sub-agents, drive dialog,
+# and report back with turn counts and resolutions.
+#
+# IMPORTANT: The orchestrator should NOT commit. It produces artifacts and reports.
+# User reviews output before any commits.
+
+cd "$REPO_ROOT"
+claude -p "$ORCHESTRATOR_PROMPT
+
+---
+IMPORTANT: Do NOT commit any changes. Produce artifacts and report results only.
+The user will review and decide whether to commit.
+---"
