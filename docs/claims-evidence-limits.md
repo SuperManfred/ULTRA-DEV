@@ -55,3 +55,32 @@ For full reproduction steps, see:
 - **Not a security sandbox.** Bash commands are approved. An agent could theoretically use Bash to access files outside the boundary.
 - **Threat model is accidental contamination.** The hook prevents agents from accidentally reading/writing wrong files, not from intentionally escaping.
 - **Absolute paths are acceptable.** Audience is internal (future agents in this system), not external users.
+
+---
+
+## What the Failed Experiment Revealed (2026-01-12)
+
+### Claim: Task tool cannot test tension architecture
+
+**Evidence:**
+- `docs/anti-patterns.md` - Anti-pattern #1
+- 3 implementers spawned via Task tool, each ONE turn, ZERO review, ZERO dialog
+
+**What went wrong:**
+- Task tool runs agents within the current session
+- No way to spawn orchestrator that drives multi-turn dialog with reviewers
+- Result: one-shot implementations that test NOTHING about the architecture
+
+### Claim: One-shot without review is useless
+
+**Evidence:**
+- Worktrees `ULTRA-DEV-wt-1`, `wt-2`, `wt-3` contain scripts created without review
+- These scripts exist but have NOT been validated by the tension architecture
+- They should NOT be merged until validated by an actual experiment
+
+### Claim: Turn count reporting is essential for verification
+
+**Evidence:**
+- Without turn counts, a one-shot looks identical to a thorough multi-turn dialog
+- User cannot verify quality process occurred
+- See `docs/vision.md` - Orchestrator MUST report turn count with EACH reviewer

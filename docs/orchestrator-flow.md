@@ -35,6 +35,20 @@
                               ▼
 ```
 
+## Orchestrator Responsibilities
+
+The orchestrator drives each cluster. It MUST:
+1. Create worktree for the issue
+2. Spawn implementer, capture output
+3. Spawn reviewers (may be different number of turns with each)
+4. Drive dialog until consensus on all significant concerns
+5. Iterate implementation if needed
+6. **Report back with:**
+   - Number of turns with EACH reviewer (not necessarily the same)
+   - What concerns were raised
+   - How each was resolved (validated/invalidated with evidence)
+   - Final outcome (success with commit, or escalation with unresolved items)
+
 ## Inside Each Orchestrator
 
 ```
@@ -72,25 +86,28 @@
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ REVIEW PHASE (3 reviewers: Claude parallel-safe, Codex sequential)          │
+│ REVIEW PHASE (3 reviewers as GUARDIANS of quality)                          │
+│                                                                             │
+│  Reviewers are intelligent models doing quality assurance - not busy bees.  │
+│  They raise ALL significant concerns AND reach consensus quickly.           │
 │                                                                             │
 │  ORCHESTRATOR runs reviewers:                                               │
 │       │                                                                     │
 │       │ # Claude reviewer (can run while Codex runs)                        │
 │       ├──► claude -p "Review..." > .claude/reviews/reviewer-1.txt           │
-│       │         └── REVIEWER-1 (Claude Opus)                                │
+│       │         └── REVIEWER-1 (Claude Opus 4.5)                            │
 │       │                                                                     │
 │       │ # Codex reviewers SEQUENTIAL (not parallel - auth conflicts)        │
 │       ├──► codex exec -m gpt-5.2 -c model_reasoning_effort="high" \         │
 │       │      --skip-git-repo-check -s read-only "Review..."                 │
-│       │         └── REVIEWER-2 (GPT-5.2 xhigh) → output to reviewer-2.txt   │
+│       │         └── REVIEWER-2 (GPT-5.2 high) → output to reviewer-2.txt    │
 │       │                                                                     │
 │       └──► codex exec -m gpt-5.2-codex --skip-git-repo-check \              │
 │              -s read-only "Review..."                                       │
 │                 └── REVIEWER-3 (GPT-5.2-codex) → output to reviewer-3.txt   │
 │                                                                             │
-│  ORCHESTRATOR writes outputs to .claude/reviews/*.txt                       │
-│  (Reviewers are read-only; orchestrator captures their text output)         │
+│  NOTE: Different reviewers may need different numbers of dialog turns.      │
+│  Orchestrator tracks turn count with EACH reviewer separately.              │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
@@ -134,11 +151,14 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ DECISION POINT                                                              │
 │                                                                             │
-│  LIMITS: MAX_ITERATIONS=3, MAX_DIALOG_ROUNDS=5                              │
+│  SAFETY RAILS (not goals): MAX_ITERATIONS=3, MAX_DIALOG_ROUNDS=5            │
+│  These exist for pathological cases. Goal is quality, not fitting bounds.   │
 │                                                                             │
-│  IF all reviewers APPROVE (no unresolved concerns):                         │
+│  IF all significant concerns resolved with evidence:                        │
 │    → Commit changes                                                         │
-│    → Report success to COORDINATOR                                          │
+│    → Report success to COORDINATOR with:                                    │
+│        - Turn count with EACH reviewer (may differ)                         │
+│        - Concerns raised and how each was resolved                          │
 │    → Exit loop                                                              │
 │                                                                             │
 │  IF changes needed AND iteration < MAX_ITERATIONS:                          │
@@ -147,9 +167,9 @@
 │    → Resume IMPLEMENTER with spec (new claude -p call)                      │
 │    → Loop back to REVIEW PHASE                                              │
 │                                                                             │
-│  IF iteration >= MAX_ITERATIONS:                                            │
-│    → Report failure to COORDINATOR with unresolved concerns                 │
-│    → Exit loop (escalate to user)                                           │
+│  IF stuck or genuinely ambiguous:                                           │
+│    → Report to COORDINATOR with unresolved concerns                         │
+│    → Escalate to user (this is acceptable - better than slop)               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
@@ -158,8 +178,11 @@
 │ COMPLETION                                                                  │
 │                                                                             │
 │  ORCHESTRATOR reports to COORDINATOR:                                       │
+│    - Turn count with EACH reviewer (e.g., R1: 3 turns, R2: 5 turns, R3: 2)  │
+│    - What concerns were raised                                              │
+│    - How each concern was resolved (with evidence)                          │
 │    - "Issue #N complete. Branch: feature/N. Commit: [hash]"                 │
-│    - OR "Issue #N failed after N iterations. Unresolved: [details]"         │
+│    - OR "Issue #N escalated. Unresolved: [details]" (acceptable outcome)    │
 │                                                                             │
 │  COORDINATOR reports to USER:                                               │
 │    - Summary of all clusters                                                │
@@ -201,12 +224,24 @@ repo-wt-N/
 └── ... (repo files)
 ```
 
-## Limits
+## Questions and Escalation
+
+Agents can ask questions. The escalation hierarchy:
+
+1. **Cluster agent** raises question to **Orchestrator**
+2. **Orchestrator** resolves with available context if possible
+3. If **Orchestrator** cannot resolve → escalate to **User**
+
+User escalation should be rare but is available when genuinely needed. Don't guess - ask. Don't produce slop because a question wasn't asked.
+
+## Limits (Safety Rails, Not Goals)
 
 | Limit | Value | Purpose |
 |-------|-------|---------|
-| MAX_ITERATIONS | 3 | Prevent infinite implementation loops |
-| MAX_DIALOG_ROUNDS | 5 | Prevent infinite consensus debates |
+| MAX_ITERATIONS | 3 | Escalate if stuck, don't loop forever |
+| MAX_DIALOG_ROUNDS | 5 | Escalate if deadlocked, don't debate forever |
+
+These are safety rails for pathological cases. The goal is quality work in as many iterations as it takes, not fitting within bounds.
 
 ## DIALOG Protocol Detail
 

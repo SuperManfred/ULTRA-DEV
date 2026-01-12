@@ -8,7 +8,9 @@ Automate the creation of a worktree and spawning of agent sessions for a develop
 
 Each cluster consists of:
 - **1 Implementer** - Full write access, does the coding
-- **3 Reviewers** - Read-only, forensic-level review
+- **3 Reviewers** - Read-only, **guardians of quality**
+
+Reviewers are intelligent models (Opus 4.5, GPT-5.2 high, GPT-5.2-codex) doing quality assurance - not busy bees. They raise ALL significant concerns AND reach consensus as quickly as possible by validating/invalidating what matters.
 
 | Role | CLI | Isolation Mechanism | Access |
 |------|-----|---------------------|--------|
@@ -219,6 +221,27 @@ REVIEW CHECKLIST:
 Prefix all responses with: "PR Reviewer 2 says: "
 ```
 
+## Orchestrator Reporting Requirements
+
+When the orchestrator completes, it MUST report:
+
+1. **Turn count with EACH reviewer** (may differ - e.g., R1: 3 turns, R2: 5 turns, R3: 2 turns)
+2. **What concerns were raised**
+3. **How each concern was resolved** (validated/invalidated with evidence)
+4. **Final outcome**: success with commit, or escalation with unresolved items
+
+Escalation is an acceptable outcome. Better to escalate than produce slop.
+
+## Questions and Escalation
+
+Agents can ask questions when requirements are unclear or concerns can't be resolved:
+
+1. **Agent** raises question to **Orchestrator**
+2. **Orchestrator** resolves with available context if possible
+3. If **Orchestrator** cannot resolve → escalate to **User**
+
+User escalation should be rare but is available. Don't guess - ask.
+
 ## What "Done" Means
 
 The script is done when:
@@ -228,6 +251,7 @@ The script is done when:
 4. Role files generated in `.claude/`
 5. Agent sessions have completed (not necessarily succeeded)
 6. Outputs are captured in `.claude/outputs/`
+7. **Orchestrator has reported turn counts and resolution paths**
 
 The script does NOT:
 - Verify agents completed their task correctly
@@ -245,6 +269,11 @@ Those are separate operations.
 | Reviewer with write access | Defeats the purpose of independent review |
 | Skipping issue.md | Agents have no shared understanding of task |
 | Infinite agent loops | Always include termination conditions |
+| **One-shot without review** | Tests nothing about tension architecture |
+| **Disagreement for its own sake** | Reviewers are guardians, not busy bees |
+| **Not reporting turn counts** | User can't verify quality process occurred |
+| **Guessing instead of asking** | Produces slop when question could resolve |
+| **Treating limits as goals** | Limits are safety rails, not targets |
 
 ## Example Usage
 
