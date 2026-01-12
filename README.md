@@ -21,9 +21,9 @@ ULTRA-DEV/
 │   └── experimentation-principles.md
 ├── experiments/
 │   └── worktree-isolation/     # Phased testing of isolation mechanism
-│       ├── phase-1/            # Hook enforcement (COMPLETE - 5/5 passed)
-│       ├── phase-2/            # Orchestrator spawns sub-agent
-│       └── phase-3/            # Full parallel test
+│       ├── phase-1/            # Hook enforcement - PASSED
+│       ├── phase-2/            # Sub-agent spawning - PASSED
+│       └── phase-3/            # Parallel execution - PASSED
 └── prompts/                    # Saved prompts for traceability
 ```
 
@@ -32,6 +32,8 @@ ULTRA-DEV/
 Each worktree session is spawned with:
 ```bash
 export WORKTREE_ROOT=/path/to/worktree
+cd /path/to/worktree
+claude -p "task prompt"
 ```
 
 PreToolUse hook (integrated into ~/.claude/settings.json) checks:
@@ -40,15 +42,28 @@ PreToolUse hook (integrated into ~/.claude/settings.json) checks:
 - Target inside `WORKTREE_ROOT`? Approve.
 - Target outside `WORKTREE_ROOT`? Block.
 
-## Proven
+## Proven (All Phases Complete)
 
-- [x] enforce-worktree hook blocks operations outside WORKTREE_ROOT (Phase 1: 5/5 tests passed)
+| Phase | What It Tests | Result |
+|-------|---------------|--------|
+| 1 | Hook blocks operations outside WORKTREE_ROOT | PASSED (5/5 tests) |
+| 2 | Orchestrator spawns restricted sub-agent via `claude -p` | PASSED |
+| 3 | 3 parallel worktrees, no cross-contamination | PASSED |
 
-## In Progress
+Each phase has a documented recipe in `experiments/worktree-isolation/phase-N/recipe.md` that can be followed to reproduce the results.
 
-- [ ] Phase 2: Orchestrator spawns sub-agent with WORKTREE_ROOT
-- [ ] Phase 3: Parallel worktrees without cross-contamination
+## What This Enables
+
+An orchestrator can:
+1. Create a git worktree for a feature/issue
+2. Export WORKTREE_ROOT and spawn sub-agents via `claude -p`
+3. Those sub-agents are automatically restricted to the worktree
+4. Multiple orchestrators can run in parallel without interference
 
 ## Not Yet Built
 
-Future components will be created when we have precise, documented plans for them.
+- spawn-cluster script (automate worktree creation + agent spawning)
+- Role templates (implementer, reviewers)
+- Coordination protocols (how agents communicate within a cluster)
+
+These will be created when we have precise, documented plans for them.
