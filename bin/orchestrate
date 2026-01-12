@@ -4,8 +4,12 @@
 #
 # Usage: orchestrate <issue-number>
 #
-# This spawns a Claude session that acts as an orchestrator,
-# driving the full tension architecture loop for the given issue.
+# This:
+# 1. Creates a worktree for the issue
+# 2. Writes CLAUDE.local.md with orchestrator context
+# 3. Opens a new Terminal window with interactive `c` session
+#
+# The orchestrator can then approve commands and interact with you.
 #
 
 set -e
@@ -16,37 +20,86 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 if [ -z "$1" ]; then
     echo "Usage: orchestrate <issue-number>"
     echo ""
-    echo "Example: orchestrate 123"
+    echo "Example: orchestrate 9"
     exit 1
 fi
 
 ISSUE_NUMBER="$1"
+WORKTREE_PATH="$REPO_ROOT/../ULTRA-DEV-wt-$ISSUE_NUMBER"
 
 # Check if issue exists
-if ! gh issue view "$ISSUE_NUMBER" --repo "$(gh repo view --json nameWithOwner -q .nameWithOwner)" &>/dev/null; then
+if ! gh issue view "$ISSUE_NUMBER" &>/dev/null; then
     echo "Error: Issue #$ISSUE_NUMBER not found or not accessible"
     exit 1
+fi
+
+# Check if worktree already exists
+if [ -d "$WORKTREE_PATH" ]; then
+    echo "Worktree already exists at: $WORKTREE_PATH"
+    echo "Opening terminal for existing worktree..."
+else
+    echo "Creating worktree for issue #$ISSUE_NUMBER..."
+
+    # Create worktree
+    cd "$REPO_ROOT"
+    git worktree add "$WORKTREE_PATH" -b "feature/$ISSUE_NUMBER" 2>/dev/null || \
+        git worktree add "$WORKTREE_PATH" "feature/$ISSUE_NUMBER"
+
+    # Create context directories
+    mkdir -p "$WORKTREE_PATH/.claude/outputs"
+    mkdir -p "$WORKTREE_PATH/.claude/reviews"
+    mkdir -p "$WORKTREE_PATH/.claude/dialog"
+    mkdir -p "$WORKTREE_PATH/.claude/iterations"
+
+    # Fetch issue from GitHub
+    echo "Fetching issue #$ISSUE_NUMBER from GitHub..."
+    gh issue view "$ISSUE_NUMBER" --json title,body --jq '"# " + .title + "\n\n" + .body' \
+        > "$WORKTREE_PATH/.claude/issue.md"
 fi
 
 # Read orchestrator prompt and substitute issue number
 ORCHESTRATOR_PROMPT=$(cat "$REPO_ROOT/prompts/orchestrator.md" | sed "s/ISSUE_NUMBER/$ISSUE_NUMBER/g")
 
-echo "Starting orchestrator for issue #$ISSUE_NUMBER..."
-echo ""
-echo "Worktree will be created at: $REPO_ROOT/../ULTRA-DEV-wt-$ISSUE_NUMBER"
-echo ""
+# Write CLAUDE.local.md - Claude will read this automatically
+cat > "$WORKTREE_PATH/CLAUDE.local.md" << CLAUDEEOF
+# Orchestrator Context for Issue #$ISSUE_NUMBER
 
-# Run the orchestrator
-# Note: The orchestrator will create the worktree, spawn sub-agents, drive dialog,
-# and report back with turn counts and resolutions.
-#
-# IMPORTANT: The orchestrator should NOT commit. It produces artifacts and reports.
-# User reviews output before any commits.
+You are an orchestrator for this issue. Read prompts/orchestrator.md for full instructions.
 
-cd "$REPO_ROOT"
-claude -p "$ORCHESTRATOR_PROMPT
+## Quick Reference
+
+1. The issue is in: .claude/issue.md
+2. Spawn implementer with: \`claude -p "\$(cat $REPO_ROOT/prompts/implementer.md)..."\`
+3. Spawn reviewers with: \`claude -p\` and \`codex exec\`
+4. Track dialog in: .claude/dialog/
+5. **DO NOT COMMIT** - produce artifacts and report only
+
+## Issue
+
+$(cat "$WORKTREE_PATH/.claude/issue.md")
 
 ---
-IMPORTANT: Do NOT commit any changes. Produce artifacts and report results only.
+
+$ORCHESTRATOR_PROMPT
+
+---
+
+**IMPORTANT:** Do NOT commit any changes. Produce artifacts and report results only.
 The user will review and decide whether to commit.
----"
+CLAUDEEOF
+
+echo ""
+echo "Worktree ready at: $WORKTREE_PATH"
+echo "CLAUDE.local.md written with orchestrator context"
+echo ""
+echo "Opening new Terminal window..."
+
+# Open new Terminal window with interactive claude session
+osascript << EOF
+tell application "Terminal"
+    activate
+    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && echo 'Orchestrator for Issue #$ISSUE_NUMBER' && echo 'Worktree: $WORKTREE_PATH' && echo '' && c"
+end tell
+EOF
+
+echo "Done. Terminal window opened with interactive Claude session."

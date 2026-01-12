@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# orchestrate-batch - Run orchestrators for multiple issues
+#
+# Usage: orchestrate-batch <issue-numbers...>
+#
+# Example: orchestrate-batch 9 10 11 12 13
+#
+# This opens a new Terminal window for each issue with an interactive
+# Claude session acting as orchestrator.
+#
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ $# -eq 0 ]; then
+    echo "Usage: orchestrate-batch <issue-numbers...>"
+    echo ""
+    echo "Example: orchestrate-batch 9 10 11 12 13"
+    echo ""
+    echo "This opens a new Terminal window for each issue."
+    exit 1
+fi
+
+echo "Starting orchestrators for issues: $@"
+echo ""
+
+for ISSUE in "$@"; do
+    echo "Launching orchestrator for issue #$ISSUE..."
+    "$SCRIPT_DIR/orchestrate" "$ISSUE"
+
+    # Small delay to avoid overwhelming Terminal
+    sleep 1
+done
+
+echo ""
+echo "All orchestrators launched."
+echo "Each is in its own Terminal window with interactive Claude session."
