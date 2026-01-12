@@ -25,7 +25,9 @@ if [ -z "$1" ]; then
 fi
 
 ISSUE_NUMBER="$1"
-WORKTREE_PATH="$REPO_ROOT/../ULTRA-DEV-wt-$ISSUE_NUMBER"
+# Use parent directory of REPO_ROOT, normalize to avoid .. in path
+PARENT_DIR="$(cd "$REPO_ROOT/.." && pwd)"
+WORKTREE_PATH="$PARENT_DIR/ULTRA-DEV-wt-$ISSUE_NUMBER"
 
 # Check if issue exists
 if ! gh issue view "$ISSUE_NUMBER" &>/dev/null; then
