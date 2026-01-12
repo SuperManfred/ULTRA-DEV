@@ -11,11 +11,11 @@
 │ ┌─────────────────────────────────────────────────────────────────────────┐ │
 │ │ COORDINATOR (Current Claude Session)                                    │ │
 │ │                                                                         │ │
-│ │  Spawns orchestrators in parallel (one per issue):                      │ │
+│ │  Spawns orchestrators in parallel (one per issue via Bash):             │ │
 │ │                                                                         │ │
-│ │  Task(prompt="Orchestrator for issue #1...")  ───┐                      │ │
-│ │  Task(prompt="Orchestrator for issue #2...")  ───┼─── Run in parallel   │ │
-│ │  Task(prompt="Orchestrator for issue #3...")  ───┘                      │ │
+│ │  claude -p "Orchestrator for issue #1..." &  ───┐                       │ │
+│ │  claude -p "Orchestrator for issue #2..." &  ───┼─── Run in parallel    │ │
+│ │  claude -p "Orchestrator for issue #3..." &  ───┘                       │ │
 │ │                                                                         │ │
 │ └─────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -54,36 +54,43 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ IMPLEMENTATION PHASE                                                        │
 │                                                                             │
-│  ORCHESTRATOR                                                               │
+│  ORCHESTRATOR runs via Bash:                                                │
 │       │                                                                     │
-│       │ Task(prompt="Implement: [issue.md]")                                │
+│       │ claude -p "Implement: [issue.md]" > .claude/outputs/implementer.txt │
 │       ▼                                                                     │
 │  ┌─────────────┐                                                            │
 │  │ IMPLEMENTER │                                                            │
 │  │ (Claude)    │                                                            │
 │  └──────┬──────┘                                                            │
 │         │                                                                   │
-│         │ Returns: brief message of what was done                           │
+│         │ Returns: brief message of what was done (captured to file)        │
 │         │                                                                   │
 │         ▼                                                                   │
-│  ORCHESTRATOR receives work summary                                         │
+│  ORCHESTRATOR reads output file for work summary                            │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ REVIEW PHASE (3 independent reviewers in parallel)                          │
+│ REVIEW PHASE (3 reviewers: Claude parallel-safe, Codex sequential)          │
 │                                                                             │
-│  ORCHESTRATOR spawns all 3 simultaneously:                                  │
+│  ORCHESTRATOR runs reviewers:                                               │
 │       │                                                                     │
-│       ├──► REVIEWER-1 (Claude Opus `c`)                                     │
-│       │         └── Returns: brief message + .claude/reviews/reviewer-1.md  │
+│       │ # Claude reviewer (can run while Codex runs)                        │
+│       ├──► claude -p "Review..." > .claude/reviews/reviewer-1.txt           │
+│       │         └── REVIEWER-1 (Claude Opus)                                │
 │       │                                                                     │
-│       ├──► REVIEWER-2 (GPT-5.2 xhigh via Codex)                             │
-│       │         └── Returns: brief message + .claude/reviews/reviewer-2.md  │
+│       │ # Codex reviewers SEQUENTIAL (not parallel - auth conflicts)        │
+│       ├──► codex exec -m gpt-5.2 -c model_reasoning_effort="high" \         │
+│       │      --skip-git-repo-check -s read-only "Review..."                 │
+│       │         └── REVIEWER-2 (GPT-5.2 xhigh) → output to reviewer-2.txt   │
 │       │                                                                     │
-│       └──► REVIEWER-3 (GPT-5.2-codex via Codex)                             │
-│                 └── Returns: brief message + .claude/reviews/reviewer-3.md  │
+│       └──► codex exec -m gpt-5.2-codex --skip-git-repo-check \              │
+│              -s read-only "Review..."                                       │
+│                 └── REVIEWER-3 (GPT-5.2-codex) → output to reviewer-3.txt   │
+│                                                                             │
+│  ORCHESTRATOR writes outputs to .claude/reviews/*.txt                       │
+│  (Reviewers are read-only; orchestrator captures their text output)         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
@@ -127,16 +134,22 @@
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ DECISION POINT                                                              │
 │                                                                             │
+│  LIMITS: MAX_ITERATIONS=3, MAX_DIALOG_ROUNDS=5                              │
+│                                                                             │
 │  IF all reviewers APPROVE (no unresolved concerns):                         │
 │    → Commit changes                                                         │
 │    → Report success to COORDINATOR                                          │
 │    → Exit loop                                                              │
 │                                                                             │
-│  IF changes needed:                                                         │
+│  IF changes needed AND iteration < MAX_ITERATIONS:                          │
 │    → ORCHESTRATOR compiles spec from consensus                              │
 │    → Precise requirements for next iteration                                │
-│    → Resume IMPLEMENTER with spec                                           │
+│    → Resume IMPLEMENTER with spec (new claude -p call)                      │
 │    → Loop back to REVIEW PHASE                                              │
+│                                                                             │
+│  IF iteration >= MAX_ITERATIONS:                                            │
+│    → Report failure to COORDINATOR with unresolved concerns                 │
+│    → Exit loop (escalate to user)                                           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
@@ -160,11 +173,13 @@
 | Role | Model | CLI | Mode |
 |------|-------|-----|------|
 | COORDINATOR | Claude Opus | Current session | - |
-| ORCHESTRATOR | Claude Opus | Task tool | Sub-agent |
-| IMPLEMENTER | Claude Opus | Task tool | Sub-agent, can write |
-| REVIEWER-1 | Claude Opus | Task tool (`c`) | Read-only |
-| REVIEWER-2 | GPT-5.2 | Codex CLI xhigh | Read-only |
-| REVIEWER-3 | GPT-5.2-codex | Codex CLI | Read-only |
+| ORCHESTRATOR | Claude Opus | `claude -p` via Bash | Separate process |
+| IMPLEMENTER | Claude Opus | `claude -p` via Bash | Can write |
+| REVIEWER-1 | Claude Opus | `claude -p` via Bash | Read-only (instruction) |
+| REVIEWER-2 | GPT-5.2 | `codex exec -s read-only` | Read-only (enforced) |
+| REVIEWER-3 | GPT-5.2-codex | `codex exec -s read-only` | Read-only (enforced) |
+
+**Why Bash instead of Task tool:** Task tool cannot set per-subagent WORKTREE_ROOT (see claims-evidence-limits.md). Separate CLI processes inherit environment variables.
 
 ## File Structure Per Worktree
 
@@ -172,17 +187,26 @@
 repo-wt-N/
 ├── .claude/
 │   ├── issue.md                    # Fetched from GitHub
+│   ├── outputs/
+│   │   └── implementer.txt         # Implementer output (each iteration)
 │   ├── reviews/
-│   │   ├── reviewer-1.md           # Claude Opus review
-│   │   ├── reviewer-2.md           # GPT-5.2 xhigh review
-│   │   └── reviewer-3.md           # GPT-5.2-codex review
+│   │   ├── reviewer-1.txt          # Claude Opus review (orchestrator writes)
+│   │   ├── reviewer-2.txt          # GPT-5.2 xhigh review (orchestrator writes)
+│   │   └── reviewer-3.txt          # GPT-5.2-codex review (orchestrator writes)
 │   ├── dialog/
-│   │   └── round-N.md              # Dialog protocol transcripts
+│   │   └── round-N.txt             # Dialog protocol transcripts
 │   └── iterations/
 │       ├── iteration-1-spec.md     # What implementer was asked to do
 │       └── iteration-2-spec.md     # Next iteration spec (if needed)
 └── ... (repo files)
 ```
+
+## Limits
+
+| Limit | Value | Purpose |
+|-------|-------|---------|
+| MAX_ITERATIONS | 3 | Prevent infinite implementation loops |
+| MAX_DIALOG_ROUNDS | 5 | Prevent infinite consensus debates |
 
 ## DIALOG Protocol Detail
 

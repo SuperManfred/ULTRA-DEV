@@ -8,13 +8,16 @@ Automate the creation of a worktree and spawning of agent sessions for a develop
 
 Each cluster consists of:
 - **1 Implementer** - Full write access, does the coding
-- **2 Reviewers** - Read-only, forensic-level review
+- **3 Reviewers** - Read-only, forensic-level review
 
 | Role | CLI | Isolation Mechanism | Access |
 |------|-----|---------------------|--------|
-| Implementer | `claude` | `WORKTREE_ROOT` + PreToolUse hook | Read/Write |
-| Reviewer-1 | `claude` | `WORKTREE_ROOT` + PreToolUse hook | Read-only (best-effort, instruction-based) |
-| Reviewer-2 | `codex` | `-s read-only` sandbox | Read-only (enforced) |
+| Implementer | `claude -p` | `WORKTREE_ROOT` + PreToolUse hook | Read/Write |
+| Reviewer-1 | `claude -p` | `WORKTREE_ROOT` + PreToolUse hook | Read-only (instruction-based) |
+| Reviewer-2 | `codex exec` | `-s read-only` sandbox | Read-only (enforced) |
+| Reviewer-3 | `codex exec` | `-s read-only` sandbox | Read-only (enforced) |
+
+**Note:** Codex reviewers run sequentially (not parallel) to avoid auth conflicts.
 
 ## Inputs
 
