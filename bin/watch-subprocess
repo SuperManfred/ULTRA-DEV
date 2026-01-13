@@ -1,0 +1,77 @@
+#!/bin/bash
+# watch-subprocess: Monitor a subprocess for stalls and handle timeouts
+#
+# Usage: watch-subprocess <output-file> <pid> [timeout-minutes]
+#
+# Monitors the output file for growth. If no growth for timeout period,
+# kills the process and writes status file.
+#
+# Exit codes:
+#   0 - Process completed normally
+#   1 - Process stalled and was killed
+
+set -euo pipefail
+
+OUTPUT_FILE="${1:?Usage: watch-subprocess <output-file> <pid> [timeout-minutes]}"
+PID="${2:?Usage: watch-subprocess <output-file> <pid> [timeout-minutes]}"
+TIMEOUT_MINUTES="${3:-10}"
+
+TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+CHECK_INTERVAL=30
+STALL_SECONDS=0
+LAST_SIZE=-1
+
+log() {
+    echo "[$(date '+%H:%M:%S')] $*" >> "${OUTPUT_FILE}.watch.log"
+}
+
+log "Started watching PID $PID, output: $OUTPUT_FILE, timeout: ${TIMEOUT_MINUTES}m"
+
+while kill -0 "$PID" 2>/dev/null; do
+    sleep $CHECK_INTERVAL
+
+    # Get current file size (0 if file doesn't exist yet)
+    if [[ -f "$OUTPUT_FILE" ]]; then
+        CURRENT_SIZE=$(stat -f%z "$OUTPUT_FILE" 2>/dev/null || stat --printf="%s" "$OUTPUT_FILE" 2>/dev/null || echo "0")
+    else
+        CURRENT_SIZE=0
+    fi
+
+    if [[ "$CURRENT_SIZE" == "$LAST_SIZE" ]]; then
+        # No growth
+        STALL_SECONDS=$((STALL_SECONDS + CHECK_INTERVAL))
+        log "No growth: ${STALL_SECONDS}s / ${TIMEOUT_SECONDS}s (size: $CURRENT_SIZE)"
+
+        if [[ $STALL_SECONDS -ge $TIMEOUT_SECONDS ]]; then
+            log "STALL DETECTED after ${TIMEOUT_MINUTES} minutes"
+            log "Sending SIGTERM to PID $PID"
+            kill -TERM "$PID" 2>/dev/null || true
+
+            # Wait for graceful exit
+            sleep 30
+
+            # Force kill if still running
+            if kill -0 "$PID" 2>/dev/null; then
+                log "Process still running, sending SIGKILL"
+                kill -KILL "$PID" 2>/dev/null || true
+            fi
+
+            echo "STALLED" > "${OUTPUT_FILE}.status"
+            log "Marked as STALLED"
+            exit 1
+        fi
+    else
+        # Growth detected, reset stall timer
+        if [[ $STALL_SECONDS -gt 0 ]]; then
+            log "Growth resumed after ${STALL_SECONDS}s stall (size: $LAST_SIZE -> $CURRENT_SIZE)"
+        fi
+        STALL_SECONDS=0
+        LAST_SIZE=$CURRENT_SIZE
+    fi
+done
+
+# Process exited normally
+FINAL_SIZE=$(stat -f%z "$OUTPUT_FILE" 2>/dev/null || stat --printf="%s" "$OUTPUT_FILE" 2>/dev/null || echo "0")
+log "Process completed normally (final size: $FINAL_SIZE bytes)"
+echo "COMPLETE" > "${OUTPUT_FILE}.status"
+exit 0

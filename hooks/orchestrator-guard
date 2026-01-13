@@ -1,0 +1,75 @@
+#!/bin/bash
+# orchestrator-guard: PreToolUse hook to constrain orchestrator
+#
+# When ORCHESTRATOR_MODE=true, blocks tools that do work directly.
+# The orchestrator can ONLY spawn subagents and read their outputs.
+#
+# Allowed:
+#   - Bash (for spawning subagents)
+#   - Read (only .claude/ directory and prompts/)
+#
+# Blocked:
+#   - Write, Edit, WebFetch, Glob, Grep, Task, TodoWrite
+#
+# Usage: Add to ~/.claude/settings.json PreToolUse hooks
+
+set -euo pipefail
+
+input=$(cat)
+tool=$(echo "$input" | jq -r '.tool_name')
+
+# Only enforce in orchestrator mode
+if [[ "${ORCHESTRATOR_MODE:-false}" != "true" ]]; then
+    echo '{"decision": "approve"}'
+    exit 0
+fi
+
+# Blocked tools - orchestrator cannot use these directly
+case "$tool" in
+    Write|Edit|WebFetch|Glob|Grep|Task|TodoWrite)
+        echo "{\"decision\": \"block\", \"reason\": \"Orchestrator cannot use $tool directly. Spawn a subagent instead.\"}"
+        exit 0
+        ;;
+esac
+
+# Read is allowed but restricted to .claude/ and prompts/
+if [[ "$tool" == "Read" ]]; then
+    target_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
+
+    # Resolve to absolute path if relative
+    if [[ -n "$target_path" && "$target_path" != /* ]]; then
+        cwd=$(echo "$input" | jq -r '.cwd // empty')
+        if [[ -n "$cwd" ]]; then
+            target_path="$cwd/$target_path"
+        fi
+    fi
+
+    # Normalize path
+    resolved_path=$(realpath -m "$target_path" 2>/dev/null || echo "$target_path")
+
+    # Allow: .claude/ directory (outputs, reviews, iterations, dialog, skills)
+    if [[ "$resolved_path" == *"/.claude/"* ]]; then
+        echo '{"decision": "approve"}'
+        exit 0
+    fi
+
+    # Allow: prompts/ directory (agent instructions)
+    if [[ "$resolved_path" == */prompts/* ]]; then
+        echo '{"decision": "approve"}'
+        exit 0
+    fi
+
+    # Allow: AGENTS.md files (may need to check guidelines)
+    if [[ "$resolved_path" == */AGENTS.md ]]; then
+        echo '{"decision": "approve"}'
+        exit 0
+    fi
+
+    # Block everything else
+    echo "{\"decision\": \"block\", \"reason\": \"Orchestrator can only read from .claude/ or prompts/. Attempted: $target_path\"}"
+    exit 0
+fi
+
+# Bash is allowed (for spawning subagents)
+# Other tools not explicitly blocked are allowed
+echo '{"decision": "approve"}'

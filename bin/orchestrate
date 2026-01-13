@@ -97,10 +97,11 @@ echo ""
 echo "Opening new Terminal window..."
 
 # Open new Terminal window with interactive claude session
+# ORCHESTRATOR_MODE enables hooks that constrain the orchestrator
 osascript << EOF
 tell application "Terminal"
     activate
-    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && echo 'Orchestrator for Issue #$ISSUE_NUMBER' && echo 'Worktree: $WORKTREE_PATH' && echo '' && c"
+    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && export ORCHESTRATOR_MODE=true && echo 'Orchestrator for Issue #$ISSUE_NUMBER' && echo 'Worktree: $WORKTREE_PATH' && echo 'Mode: CONSTRAINED (hooks active)' && echo '' && c"
 end tell
 EOF
 
