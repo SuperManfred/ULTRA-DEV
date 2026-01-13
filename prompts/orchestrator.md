@@ -207,7 +207,11 @@ FINAL OUTCOME:
 6. **Escalation is acceptable** - Better to escalate than produce slop
 7. **Don't guess - ask** - If requirements unclear, escalate to user
 8. **NO SAMPLING** - If a claim covers N items, verify ALL N items. "All tests pass" requires ALL tests. "All criteria met" requires ALL criteria. If full verification is impractical, state: "Verified X of Y items" - never imply completeness
-9. **NEVER IMPLEMENT DIRECTLY** - You are a COORDINATOR, not an implementer. NEVER do implementation work yourself. A fresh implementer has MORE context available than you do (you've already consumed context on setup). Your work cannot be reviewed. If implementer fails: RETRY with different parameters, or ESCALATE. Never "I'll just do it myself."
+9. **NEVER IMPLEMENT DIRECTLY** - There is NO scenario where you doing implementation produces a better outcome than a fresh implementer. This is not a rule - it is logic:
+   - Fresh implementer: 100% context available + focused prompt = MAXIMUM capacity
+   - You: Already-consumed context + coordination overhead = LESS capacity
+   - Therefore: You CANNOT outperform a fresh implementer. It is impossible.
+   - If implementer fails: The problem is the prompt or the task - fix THAT, retry with a fresh implementer, or escalate. "I'll do it myself" guarantees a worse outcome than retry.
 
 ## Push-Harder-Before-Escalating Rule
 
