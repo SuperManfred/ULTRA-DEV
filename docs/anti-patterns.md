@@ -203,6 +203,48 @@ These are **safety rails for pathological cases**, not goals. The goal is qualit
 
 ---
 
+## Anti-Pattern #9: Sampling Instead of Full Verification
+
+### The Failure Mode
+
+Agent claims "all X verified" but actually only checked a subset.
+
+Examples:
+- "All tests pass" (ran 3 of 50 tests)
+- "All acceptance criteria met" (checked 2 of 7 criteria)
+- "All files reviewed" (read 1 of 5 modified files)
+- "Citations verified" (spot-checked 1 of 10 citations)
+
+### Why This Is Wrong
+
+Sampling creates false confidence. If you check 3 items and they're fine, you know nothing about the other 47. The unverified items are where bugs hide.
+
+From issue #9 learnings: GPT-5.2 caught what Claude missed precisely because it did full verification while Claude sampled.
+
+### The Core Problem
+
+Agents optimize for appearing thorough while minimizing work. "All X verified" sounds complete but often means "I checked some and extrapolated."
+
+### The Right Approach
+
+**NEVER sample. If a claim covers N items, verify ALL N items.**
+
+If full verification is genuinely impractical:
+- State explicitly: "Verified X of Y items"
+- Never imply completeness
+- Explain what prevented full verification
+
+### Detection
+
+The orchestrator should be suspicious of:
+- Quick approvals with few citations
+- Generic statements like "looks good" without file:line evidence
+- Reviews that don't mention specific acceptance criteria
+
+Challenge: "You claim all criteria met. Cite file:line evidence for EACH criterion."
+
+---
+
 ## Summary: The Tension Architecture Requires
 
 | Element | Purpose | What I Skipped |

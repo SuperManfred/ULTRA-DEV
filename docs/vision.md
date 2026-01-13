@@ -17,9 +17,31 @@ Reviewers (powered by Opus 4.5, GPT-5.2 high, GPT-5.2-codex) are **guardians of 
 They are intelligent enough to:
 - Raise ALL matters that concern them in their role
 - Focus on matters with **significant impact** or that are **dependencies** of successfully resolving the issue
-- Reach consensus **as quickly as possible** by validating/invalidating what matters
+- Reach consensus **as efficiently as possible** while validating ALL significant concerns
 
 This is not artificial friction. This is quality assurance by capable models doing their job.
+
+## Anti-Sampling Principle
+
+**NEVER sample. If a claim covers N items, verify ALL N items.**
+
+This is foundational. Sampling creates false confidence:
+
+| Sampling Failure | Correct Approach |
+|------------------|------------------|
+| "Tests pass" (ran 3 of 50) | Run ALL 50 tests |
+| "All criteria met" (checked 2 of 7) | Check ALL 7 criteria |
+| "Files look good" (read 1 of 5) | Read ALL 5 files |
+
+**If full verification is impractical, state explicitly:**
+"Verified X of Y items" - never imply completeness.
+
+This applies to:
+- **Orchestrator**: Verifying reviewer claims and evidence
+- **Implementer**: Addressing acceptance criteria
+- **Reviewers**: Checking implementation against requirements
+
+Sampling is how slop gets approved. Full verification is how quality is assured.
 
 ## Why Tension Architecture
 

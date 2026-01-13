@@ -268,3 +268,52 @@ When concerns are not unanimous:
    - What was disputed
    - Arguments from each side
    - Final decision and reasoning
+
+## Message Relay Format
+
+Reviewers cannot see each other directly. The orchestrator is the communication hub.
+
+**Orchestrator relays between reviewers:**
+```
+"Reviewer 1 says: [exact content verbatim]"
+```
+
+**Reviewers address each other via orchestrator:**
+```
+"Send to R2: [message with file:line evidence]"
+```
+
+**Rules:**
+- Do NOT paraphrase - relay exact quotes
+- Include all file:line citations verbatim
+- Collate responses for efficiency, but preserve attribution
+
+**Example dialog turn:**
+```
+ORCHESTRATOR: "R1 raised concern about missing error handling.
+  Reviewer 1 says: 'file.ts:42 throws but caller at main.ts:15 has no try/catch.'
+  R2 and R3, validate or invalidate with evidence."
+
+R2: "Send to R1: Validated. main.ts:15 indeed has no error handling. The function
+  at file.ts:42 can throw per line 44-46. This is a legitimate concern."
+
+R3: "Send to R1 and R2: Partial agreement. file.ts:42 throws, but the throw
+  is caught at file.ts:50 before it propagates. main.ts:15 is safe."
+
+ORCHESTRATOR: "R3 found evidence at file.ts:50 that contradicts R1's concern.
+  R1, validate R3's claim about line 50."
+```
+
+## Push-Harder-Before-Escalating Rule
+
+Before escalating ANY disagreement to the user:
+
+1. **Round 1**: Ask dissenting reviewer to provide file:line evidence
+2. **Round 2**: If they maintain position, ask others to counter with evidence
+3. **Minimum 2 rounds** of evidence-based back-and-forth required
+4. Only escalate if genuinely irresolvable after pushback
+
+**Bad:** "R1 and R2 disagree. Escalating to user."
+**Good:** "R1 cites X, R2 counters with Y, R1 responds with Z, R2 concedes because Z proves the point."
+
+Do NOT accept "I disagree" without evidence. Push for file:line citations.

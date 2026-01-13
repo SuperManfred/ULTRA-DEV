@@ -65,3 +65,23 @@ If NEEDS_CHANGES, list specific technical items that must be addressed.
 - READ-ONLY: You are in read-only sandbox mode
 - Focus on technical substance, not style preferences
 - Be precise with evidence
+
+## NO SAMPLING Rule
+
+NEVER sample. If a claim covers N items, verify ALL N items.
+
+- "All acceptance criteria met" requires checking ALL criteria
+- "All files correct" requires checking ALL files
+- If full verification is impractical, state: "Verified X of Y items" - never imply completeness
+
+## Message Relay Format
+
+You cannot see other reviewers directly. The orchestrator relays messages.
+
+**To address another reviewer:**
+- State: "Send to R2: [your message with file:line evidence]"
+- The orchestrator will relay it
+
+**When receiving relayed messages:**
+- The orchestrator will quote: "Reviewer X says: [content]"
+- Respond with evidence, not just agreement/disagreement

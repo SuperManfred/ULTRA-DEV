@@ -1,0 +1,5 @@
+# Runtime artifacts from orchestrator/implementer/reviewer sessions
+.claude/
+
+# Local Claude context (generated per-worktree)
+CLAUDE.local.md

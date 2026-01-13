@@ -55,3 +55,11 @@ NOTES FOR REVIEWERS:
 - Work ONLY within the current worktree
 - Do not modify files outside your worktree boundary
 - Do not commit - the orchestrator handles that
+
+## NO SAMPLING Rule
+
+NEVER sample. If the issue has N acceptance criteria, address ALL N criteria.
+
+- "All criteria implemented" requires implementing ALL criteria
+- If you skip or defer any criterion, state it explicitly: "Implemented X of Y criteria. Deferred: [list with reasons]"
+- Never imply completeness without full verification

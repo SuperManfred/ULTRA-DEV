@@ -18,9 +18,7 @@ You are given an issue: **ISSUE_NUMBER**
 
 2. **Set up context directory**:
    ```bash
-   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/outputs
-   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/reviews
-   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/dialog
+   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/{outputs,reviews,dialog,iterations}
    ```
 
 3. **Fetch issue from GitHub**:
@@ -50,9 +48,7 @@ $(cat .claude/iterations/iteration-N-spec.md 2>/dev/null || echo 'First iteratio
 
 Read the output file to understand what was implemented.
 
-#### 2.2 Spawn Reviewers (3 reviewers as guardians of quality)
-
-Reviewers are intelligent models doing quality assurance - not busy bees. They raise ALL significant concerns AND reach consensus as quickly as possible.
+#### 2.2 Spawn Reviewers
 
 **Reviewer 1 (Claude Opus 4.5):**
 ```bash
@@ -91,25 +87,14 @@ Read all review outputs.
 
 #### 2.3 Dialog Protocol
 
-Classify concerns from reviews:
-
 | Classification | Action |
 |----------------|--------|
 | Common (2/3 or 3/3 agree) | Legit concern - add to next iteration spec |
-| Solo (1 raises, 2 don't) | Drive dialog - ask others to validate/invalidate with evidence |
+| Solo (1 raises, 2 don't) | Drive dialog per Push-Harder rule below |
 
-**For each non-unanimous concern:**
+Track dialog turns PER REVIEWER (may differ). Continue until consensus with evidence or MAX_DIALOG_ROUNDS=5 (escalate).
 
-Track dialog turns PER REVIEWER. Different reviewers may need different numbers of turns.
-
-Ask the dissenting/agreeing reviewers to cite specific file:line evidence. Continue until:
-- Consensus with evidence (resolved)
-- MAX_DIALOG_ROUNDS=5 reached (escalate)
-
-Document each dialog round in `.claude/dialog/round-N.md`:
-- What was disputed
-- Arguments from each side (with file:line citations)
-- Resolution or escalation
+Document each dialog round in `.claude/dialog/round-N.md`.
 
 #### 2.4 Decision Point
 
@@ -169,11 +154,63 @@ FINAL OUTCOME:
 5. **Evidence required** - All concern resolutions need file:line citations
 6. **Escalation is acceptable** - Better to escalate than produce slop
 7. **Don't guess - ask** - If requirements unclear, escalate to user
+8. **NO SAMPLING** - If a claim covers N items, verify ALL N items. "All tests pass" requires ALL tests. "All criteria met" requires ALL criteria. If full verification is impractical, state: "Verified X of Y items" - never imply completeness
 
-## Questions and Escalation
+## Push-Harder-Before-Escalating Rule
 
-If you encounter unclear requirements or unresolvable disagreement:
-1. First, try to resolve with available context
-2. If cannot resolve, include in report as ESCALATED with specific questions for user
+Before escalating ANY disagreement to the user, you MUST:
 
-User escalation should be rare but is available when genuinely needed.
+1. Ask the dissenting reviewer to validate/invalidate with specific file:line evidence
+2. If they maintain position, ask the other reviewers to counter with evidence
+3. **Minimum 2 rounds** of evidence-based back-and-forth before escalation
+4. Only escalate if genuinely irresolvable after pushback
+
+**Minority-Correct Principle:** If 2 reviewers disagree with 1, the 1 may still be correct. Demand evidence from the 2, not just acceptance. Vote counts don't determine truth - evidence does.
+
+Do NOT accept "I disagree" without evidence. Do NOT escalate just because reviewers differ.
+
+## Message Relay Format
+
+You are the communication hub. Reviewers cannot see each other's responses directly.
+
+**When relaying between reviewers:**
+- Use exact quotes: "Reviewer 1 says: [exact content]"
+- Do NOT paraphrase or summarize - relay verbatim
+- Include file:line citations exactly as stated
+
+**Reviewers address each other via you:**
+- Reviewer states: "Send to R2: [message]"
+- You relay: "Reviewer 1 says to Reviewer 2: [message]"
+
+## Intelligent Retry on Failure
+
+When a reviewer spawn times out or fails:
+
+1. **Retry once** with same parameters
+2. **If second failure**, try alternative approach (different model flag, shorter prompt)
+3. **If third failure**, continue with remaining reviewers and note the gap in your report
+4. **NEVER** accept failure silently or skip without trying
+
+Document all retry attempts in `.claude/dialog/`.
+
+## Collusion Detection
+
+Be suspicious of:
+- All reviewers approving quickly without substantive concerns
+- Reviewers agreeing without citing file:line evidence
+- Reviews that look templated or minimal-effort
+
+**If suspected, challenge:**
+"Your review seems brief. Cite specific file:line for each acceptance criterion you verified."
+
+Quick unanimous approval is a red flag, not a green light.
+
+## Evidence Quality Verification
+
+A citation must be VERIFIED, not just present:
+
+1. **Spot-check** 2-3 citations from each review
+2. Does the file:line actually support the claim made?
+3. If fabricated or cherry-picked, call it out: "Citation at file.ext:42 doesn't support your claim. Provide valid evidence."
+
+Never accept evidence at face value. Verify.
