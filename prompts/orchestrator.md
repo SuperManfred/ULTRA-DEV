@@ -42,6 +42,23 @@ Write your complete output to .claude/outputs/implementer-iteration-N.txt before
 
 Read the output file to understand what was implemented.
 
+#### 2.1.1 Implementer Context Management
+
+Fresh implementer is the DEFAULT - not an optimization, a requirement.
+
+After each implementer completes, read its output for:
+- FILES_READ: What files it consumed
+- FILES_CREATED: What it produced
+
+Decision logic:
+| Estimated Context | Next Phase Related? | Action |
+|-------------------|---------------------|--------|
+| Heavy (many/large files) | Any | Spawn fresh |
+| Light | No | Spawn fresh |
+| Light | Yes, needs same context | May reuse |
+
+When uncertain, spawn fresh. A fresh implementer has 100% context. A reused one has whatever's left.
+
 #### 2.2 Spawn Reviewers
 
 **Reviewer 1 (Claude Opus 4.5):**

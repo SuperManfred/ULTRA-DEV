@@ -49,6 +49,12 @@ ACCEPTANCE CRITERIA STATUS:
 NOTES FOR REVIEWERS:
 [Anything reviewers should pay attention to]
 
+FILES_READ:
+- path/to/file.ext
+
+FILES_CREATED/MODIFIED:
+- path/to/file.ext
+
 LEARNINGS (if any):
 [Flag any failure-then-success patterns, unexpected behaviors, or CLI quirks discovered during implementation. The orchestrator will capture these as skills for future runs. If none, state "None".]
 ```
