@@ -10,28 +10,16 @@ You are given an issue: **ISSUE_NUMBER**
 
 ### Phase 1: Setup
 
-1. **Create worktree**:
-   ```bash
-   cd /Users/MN/GITHUB/ULTRA-DEV
-   git worktree add ../ULTRA-DEV-wt-ISSUE_NUMBER -b feature/ISSUE_NUMBER
-   ```
+The launcher (`bin/orchestrate`) has already:
+- Created worktree at `/Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER`
+- Created `.claude/{outputs,reviews,dialog,iterations,skills}` directories
+- Fetched issue to `.claude/issue.md`
 
-2. **Set up context directory**:
-   ```bash
-   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/{outputs,reviews,dialog,iterations,skills}
-   ```
-
-3. **Fetch issue from GitHub**:
-   ```bash
-   gh issue view ISSUE_NUMBER --json title,body --jq '"# " + .title + "\n\n" + .body' \
-     > /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/issue.md
-   ```
-
-4. **Load existing skills** (if any):
-   ```bash
-   ls /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/skills/*.md 2>/dev/null
-   ```
-   Read any existing skill files - these contain learnings from previous runs. Inject relevant ones into sub-agent prompts to avoid repeated failures.
+**Your only setup task:**
+```bash
+ls .claude/skills/*.md 2>/dev/null
+```
+If skill files exist, note them - pass relevant skill paths to sub-agents so they can read them.
 
 ### Phase 2: Implementation Loop
 
@@ -42,13 +30,13 @@ You are given an issue: **ISSUE_NUMBER**
 ```bash
 export WORKTREE_ROOT=/Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 cd $WORKTREE_ROOT
-claude -p "$(cat /Users/MN/GITHUB/ULTRA-DEV/prompts/implementer.md)
+claude -p "You are an implementer. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/implementer.md
 
-ISSUE:
-$(cat .claude/issue.md)
+Then read the issue from .claude/issue.md
 
-ITERATION_SPEC:
-$(cat .claude/iterations/iteration-N-spec.md 2>/dev/null || echo 'First iteration - implement from issue description.')
+If this is not iteration 1, read .claude/iterations/iteration-N-spec.md for specific requirements.
+
+Write your complete output to .claude/outputs/implementer-iteration-N.txt before finishing.
 " > .claude/outputs/implementer-iteration-N.txt 2>&1
 ```
 
@@ -60,10 +48,11 @@ Read the output file to understand what was implemented.
 ```bash
 export WORKTREE_ROOT=/Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 cd $WORKTREE_ROOT
-claude -p "$(cat /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-claude.md)
+claude -p "You are Reviewer 1. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-claude.md
 
-ISSUE:
-$(cat .claude/issue.md)
+Then read the issue from .claude/issue.md
+
+Write your complete review to .claude/reviews/reviewer-1-round-N.txt before finishing.
 " > .claude/reviews/reviewer-1-round-N.txt 2>&1
 ```
 
@@ -71,10 +60,11 @@ $(cat .claude/issue.md)
 ```bash
 cd /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 codex exec -m gpt-5.2 -c model_reasoning_effort="high" --skip-git-repo-check -s read-only \
-  "$(cat /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-gpt-high.md)
+  "You are Reviewer 2. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-gpt-high.md
 
-ISSUE:
-$(cat .claude/issue.md)
+Then read the issue from .claude/issue.md
+
+Write your complete review to .claude/reviews/reviewer-2-round-N.txt before finishing.
 " > .claude/reviews/reviewer-2-round-N.txt 2>&1
 ```
 
@@ -82,10 +72,11 @@ $(cat .claude/issue.md)
 ```bash
 cd /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 codex exec -m gpt-5.2-codex --skip-git-repo-check -s read-only \
-  "$(cat /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-gpt-codex.md)
+  "You are Reviewer 3. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-gpt-codex.md
 
-ISSUE:
-$(cat .claude/issue.md)
+Then read the issue from .claude/issue.md
+
+Write your complete review to .claude/reviews/reviewer-3-round-N.txt before finishing.
 " > .claude/reviews/reviewer-3-round-N.txt 2>&1
 ```
 
