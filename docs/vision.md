@@ -4,176 +4,147 @@
 
 Build infrastructure where you say "work on issues #1, #2, #3" and get back high-quality, fact-based implementations.
 
-Each cluster:
+## The 6 Weighted Priorities
 
-- **Isolated** in its own worktree (can't corrupt others)
-- **Runs as many iterations as needed** (not arbitrary limits - as many as it takes)
-- **Produces work grounded in evidence** (file:line citations)
-- **Reaches consensus through validating/invalidating assertions as facts**
+Everything in this system derives from these priorities. Total weight: 100.
 
-## Reviewers as Quality Guardians
+| Weight | Priority | Summary |
+|--------|----------|---------|
+| **28** | [Quality through structured architecture](#priority-1-quality-through-structured-architecture) | Quality emerges from cluster structure, not individual agents |
+| **27** | [Hyper-efficient resilient execution](#priority-2-hyper-efficient-resilient-execution) | Maximum efficiency, agents don't die, cluster self-corrects |
+| **15** | [Parallel multi-issue processing](#priority-3-parallel-multi-issue-processing) | Work on #1, #2, #3 simultaneously in isolated worktrees |
+| **15** | [Self-improvement](#priority-4-self-improvement) | Every run produces work AND reusable knowledge |
+| **10** | [Deterministic validation first](#priority-5-deterministic-validation-first) | Catch mechanical errors before AI reviewers engage |
+| **5** | [Evidence-based, no sampling](#priority-6-evidence-based-no-sampling) | file:line citations, verify ALL N items |
 
-Reviewers (powered by Opus 4.5, GPT-5.2 high, GPT-5.2-codex) are **guardians of quality**, not busy bees disagreeing for the sake of it.
+---
 
-They are intelligent enough to:
+## Priority 1: Quality through structured architecture
 
-- Raise ALL matters that concern them in their role
-- Focus on matters with **significant impact** or that are **dependencies** of successfully resolving the issue
-- Reach consensus **as efficiently as possible** while validating ALL significant concerns
+**Weight: 28** — Quality is a property of the cluster structure, not individual agents.
 
-This is not artificial friction. This is quality assurance by capable models doing their job.
-
-## Anti-Sampling Principle
-
-**NEVER sample. If a claim covers N items, verify ALL N items.**
-
-This is foundational. Sampling creates false confidence:
-
-| Sampling Failure                    | Correct Approach     |
-| ----------------------------------- | -------------------- |
-| "Tests pass" (ran 3 of 50)          | Run ALL 50 tests     |
-| "All criteria met" (checked 2 of 7) | Check ALL 7 criteria |
-| "Files look good" (read 1 of 5)     | Read ALL 5 files     |
-
-**If full verification is impractical, state explicitly:**
-"Verified X of Y items" - never imply completeness.
-
-This applies to:
-
-- **Orchestrator**: Verifying reviewer claims and evidence
-- **Implementer**: Addressing acceptance criteria
-- **Reviewers**: Checking implementation against requirements
-
-Sampling is how slop gets approved. Full verification is how quality is assured.
-
-## Why Tension Architecture
+### Why Structure Matters
 
 Single agents optimize for agreeableness over truth. They agree with wrong statements, build on flawed premises, and claim completion without verification.
 
-Multiple reviewers with different training biases catch what a single agent misses. The goal is not disagreement - it's CONSENSUS found through TRUTH despite friction to IN/VALIDATE assertions to establish FACTS.
+Quality emerges from:
+- **Clear roles**: Orchestrator coordinates, implementer implements, reviewers review
+- **Diverse models**: Different training = different blind spots covered
+- **Structured interaction**: Dialog protocol, evidence requirements, consensus through truth
 
-## Orchestrator Responsibilities
+### The Roles
 
-The orchestrator drives each cluster. It MUST:
+| Role | Responsibility | Access |
+|------|----------------|--------|
+| **Coordinator** | Spawns orchestrators, collects results, reports to user | — |
+| **Orchestrator** | Owns one worktree, runs implementation/review loop, drives dialog to consensus | Read/Write |
+| **Implementer** | Writes code, cites changes, receives iteration specs | Read/Write |
+| **Reviewers** (3) | Guardians of quality, raise concerns with evidence, reach consensus | Read-only |
 
-1. Create worktree for the issue
-2. Spawn implementer, capture output
-3. Spawn reviewers (may be different number of turns with each)
-4. Drive dialog until consensus on all significant concerns
-5. Iterate implementation if needed
-6. **Report back with:**
-   - **Interaction diagram** - A line for each interaction showing the order of how cluster participants engaged (richer than a simple count)
-   - What concerns were raised
-   - How each was resolved (validated/invalidated with evidence)
-   - Final outcome (success with commit, or escalation with unresolved items)
+### Model Diversity
 
-## The Roles
+| Reviewer | Model | Purpose |
+|----------|-------|---------|
+| Reviewer-1 | Claude Opus 4.5 | Catches implementation gaps |
+| Reviewer-2 | GPT-5.2 high | Different training, high reasoning |
+| Reviewer-3 | GPT-5.2-codex | Code-specialized perspective |
 
-### Coordinator (the User or a special agent assigned by the User)
+### Reviewers as Quality Guardians
 
-- Spawns orchestrators for each issue (parallel)
-- Collects final results
-- Reports to user
-- Does NOT do the work itself
+Reviewers are **guardians of quality**, not busy bees disagreeing for the sake of it. They are intelligent enough to:
+- Raise ALL matters that concern them
+- Focus on matters with **significant impact** or that are **dependencies**
+- Reach consensus **as quickly as possible** while validating ALL significant concerns
 
-### Orchestrator (Separate process per issue)
+The goal is not disagreement — it's **consensus found through truth**.
 
-- Owns one worktree
-- Runs the implementation/review loop
-- Drives dialog to consensus
-- Reports detailed turn counts and resolutions
+**See:** [architecture/cluster-structure.md](architecture/cluster-structure.md), [architecture/dialog-protocol.md](architecture/dialog-protocol.md)
 
-### Implementer
+---
 
-- Writes code
-- Cites what was changed and why
-- Receives iteration specs if changes needed
+## Priority 2: Hyper-efficient resilient execution
 
-### Reviewers (3, cross-model)
+**Weight: 27** — Maximum efficiency and effectiveness, capable of hours/overnight when task complexity demands.
 
-- READ-ONLY guardians of quality
-- Raise significant concerns with file:line evidence
-- Reach consensus efficiently - not busywork
-- Different models = different blind spots covered
+### Agents Do NOT Die
 
-## Evidence Requirements
+The cluster prevents agent death by:
+- **Calibrating work to fit context** — Break tasks to fit available context window
+- **Externalizing state to files** — `.claude/` directory holds all state
+- **Checkpointing progress** — Each iteration's work is saved before proceeding
 
-Every assertion requires grounding:
+### Cluster Self-Correction
 
-- File:line citations for claims about code
-- Specific examples for concerns
-- Focus on what has significant impact or is a dependency
+If an agent fails unexpectedly:
+1. Cluster detects the failure
+2. Re-initializes with refined, better-calibrated objective
+3. Continues from last checkpoint
 
-Opinions without evidence are dismissed. Evidence decides.
+Human involved only for genuine judgment calls, never technical failures.
 
-## What Success Means
+### Fresh Implementer Principle
 
-**Success IS:**
+**Fresh implementer is the DEFAULT — not an optimization, a requirement.**
 
-- Issue resolved with high-quality, fact-based implementation
-- All significant concerns resolved with evidence
-- CONSENSUS found through TRUTH despite friction to IN/VALIDATE assertions to establish FACTS
-- Orchestrator reports interaction diagram and resolution path
-- Reusable knowledge captured from any failures-then-success patterns
+| Scenario | Action |
+|----------|--------|
+| Heavy context consumption | Spawn fresh |
+| Light context, unrelated next phase | Spawn fresh |
+| Light context, same context needed | May reuse |
+| Uncertain | Spawn fresh |
 
-**Acceptable escalation:**
+Logic: Fresh implementer has 100% context + focused prompt = MAXIMUM capacity.
+Reused implementer has consumed context + coordination overhead = LESS capacity.
 
-- Unresolved disagreement on genuinely ambiguous requirements
-- Better to escalate than produce slop
+**See:** [execution/resilient-execution.md](execution/resilient-execution.md)
 
-**Questions and Escalation:**
+---
 
-- Cluster agents can raise questions to the orchestrator
-- Orchestrator answers or resolves with available context
-- If orchestrator cannot resolve, escalate to user
-- User escalation should not be common, but it's available when genuinely needed
-- Don't guess - ask. Don't produce slop because a question wasn't asked.
+## Priority 3: Parallel multi-issue processing
 
-## Limits (Safety Rails, Not Goals)
+**Weight: 15** — Work on issues #1, #2, #3 simultaneously. Each cluster isolated in its own worktree.
 
-| Limit             | Value | Purpose                                      |
-| ----------------- | ----- | -------------------------------------------- |
-| MAX_ITERATIONS    | 3     | Escalate if stuck, don't loop forever        |
-| MAX_DIALOG_ROUNDS | 5     | Escalate if deadlocked, don't debate forever |
+### Worktree Isolation
 
-These are safety rails for pathological cases. The goal is quality work in as many iterations as it takes, not fitting within bounds.
+```bash
+git worktree add ../REPO-wt-N -b feature/N
+export WORKTREE_ROOT=/path/to/REPO-wt-N
+cd $WORKTREE_ROOT
+claude -p "prompt"
+```
 
-## Model Diversity
+The `enforce-worktree` hook checks:
+- Target inside `WORKTREE_ROOT`? → Approve
+- Target outside `WORKTREE_ROOT`? → Block
 
-| Reviewer   | Model           | Why                                |
-| ---------- | --------------- | ---------------------------------- |
-| Reviewer-1 | Claude Opus 4.5 | Catches implementation gaps        |
-| Reviewer-2 | GPT-5.2 high    | Different training, high reasoning |
-| Reviewer-3 | GPT-5.2-codex   | Code-specialized perspective       |
+**Note:** This is not a security boundary — Bash is not restricted. It prevents accidental cross-worktree contamination.
 
-These are capable models doing quality assurance, not artificial adversaries.
+### Proven Capability
 
-## Anti-Patterns
+| Phase | What It Tests | Result |
+|-------|---------------|--------|
+| 1 | Hook blocks operations outside WORKTREE_ROOT | PASSED |
+| 2 | Orchestrator spawns restricted sub-agent via `claude -p` | PASSED |
+| 3 | 3 parallel worktrees, no cross-contamination | PASSED |
 
-See `docs/anti-patterns.md`:
+**See:** [execution/parallel-processing.md](execution/parallel-processing.md), [learnings/proven-claims.md](learnings/proven-claims.md)
 
-- One-shot without review
-- Same-model review (no diversity)
-- Disagreement for its own sake (busywork)
-- Arbitrary turn limits as goals
-- Not reporting interaction diagram and resolutions
-- Not capturing reusable knowledge from failure patterns
+---
 
-## Self-Improvement Characteristic
+## Priority 4: Self-improvement
 
-**Every run produces TWO outputs:**
-
-1. **The work itself** - Issue resolved, feature implemented, bug fixed
-2. **Reusable knowledge** - Ultra-concise instructions that uplift all future agents
+**Weight: 15** — Every run produces work AND reusable knowledge.
 
 ### Why This Matters
 
-When an agent fails 3 times then succeeds on attempt 4, that pattern will be repeated by every future agent unless captured. Each repeated failure:
+When an agent fails 3 times then succeeds on attempt 4, that pattern will be repeated by every future agent unless captured.
+
+Each repeated failure:
 - Consumes context window
 - Adds latency
 - Wastes compute
 
-Capturing the solution once → all future agents succeed on attempt 1 → **non-linear improvement**.
+**Capture the solution once → all future agents succeed on attempt 1 → non-linear improvement.**
 
 ### What Captured Knowledge Looks Like
 
@@ -204,13 +175,122 @@ correct invocation here
 - CLI invocation has non-obvious flags → document them
 - Any pattern that would save future agents from wasted attempts
 
-This is how the system improves itself. The cluster isn't just solving issues - it's **producing reusable knowledge that eliminates repeated failures**.
+Skills are stored in `.claude/skills/` per worktree and can be promoted to the main repo.
 
 ---
 
-## Related
+## Priority 5: Deterministic validation first
 
-- `docs/orchestrator-flow.md` - Detailed flow diagrams
-- `docs/spawn-cluster-spec.md` - Technical specification
-- `docs/anti-patterns.md` - What not to do
-- `docs/claims-evidence-limits.md` - What we've proven works
+**Weight: 10** — Catch mechanical errors (lint, typecheck, build, test) before AI reviewers engage.
+
+### Every Reviewer Turn is High-Value Judgment
+
+Don't waste reviewer cycles on:
+- Syntax errors that a linter would catch
+- Type errors that a compiler would catch
+- Test failures that a test runner would catch
+
+Run deterministic validation BEFORE spawning reviewers:
+
+```bash
+# Run before review phase
+npm run lint && npm run typecheck && npm run test
+```
+
+If any fail → fix first, then review.
+
+**See:** [execution/deterministic-validation.md](execution/deterministic-validation.md)
+
+---
+
+## Priority 6: Evidence-based, no sampling
+
+**Weight: 5** — file:line citations. Verify ALL N items, not a sample. Never imply completeness.
+
+### Anti-Sampling Principle
+
+**NEVER sample. If a claim covers N items, verify ALL N items.**
+
+| Sampling Failure | Correct Approach |
+|------------------|------------------|
+| "Tests pass" (ran 3 of 50) | Run ALL 50 tests |
+| "All criteria met" (checked 2 of 7) | Check ALL 7 criteria |
+| "Files look good" (read 1 of 5) | Read ALL 5 files |
+
+**If full verification is impractical, state explicitly:**
+"Verified X of Y items" — never imply completeness.
+
+### Evidence Requirements
+
+Every assertion requires grounding:
+- File:line citations for claims about code
+- Specific examples for concerns
+- Focus on what has significant impact or is a dependency
+
+Opinions without evidence are dismissed. Evidence decides.
+
+### Proven Value
+
+From Issue #9 (2026-01-13):
+- Claude approved with sampling ("looks good")
+- GPT-5.2 did full verification and found the gap
+- The difference was sampling vs. full verification, not model intelligence
+
+**See:** [principles/evidence-rules.md](principles/evidence-rules.md)
+
+---
+
+## Limits (Safety Rails, Not Goals)
+
+| Limit | Value | Purpose |
+|-------|-------|---------|
+| MAX_ITERATIONS | 3 | Escalate if stuck, don't loop forever |
+| MAX_DIALOG_ROUNDS | 5 | Escalate if deadlocked, don't debate forever |
+
+These are safety rails for pathological cases. The goal is quality work in as many iterations as it takes, not fitting within bounds.
+
+Escalation is an acceptable outcome — better to escalate than produce slop.
+
+---
+
+## Success Definition
+
+**Success IS:**
+- Issue resolved with high-quality, fact-based implementation
+- All significant concerns resolved with evidence
+- Consensus found through truth
+- Orchestrator reports interaction diagram and resolution path
+- Reusable knowledge captured from failure-then-success patterns
+
+**Acceptable escalation:**
+- Unresolved disagreement on genuinely ambiguous requirements
+- Requirements that need user clarification
+- Better to escalate than produce slop
+
+**Questions and Escalation:**
+- Cluster agents raise questions to orchestrator
+- Orchestrator resolves with available context or escalates to user
+- Don't guess — ask. Don't produce slop because a question wasn't asked.
+
+---
+
+## Document Map
+
+| Document | Purpose |
+|----------|---------|
+| **Architecture** | |
+| [architecture/cluster-structure.md](architecture/cluster-structure.md) | Roles, isolation, worktree mechanics |
+| [architecture/dialog-protocol.md](architecture/dialog-protocol.md) | Consensus building, message relay |
+| [architecture/file-structure.md](architecture/file-structure.md) | `.claude/` layout, what goes where |
+| **Execution** | |
+| [execution/deterministic-validation.md](execution/deterministic-validation.md) | Lint/test/build before reviewers |
+| [execution/resilient-execution.md](execution/resilient-execution.md) | Context management, checkpointing, recovery |
+| [execution/parallel-processing.md](execution/parallel-processing.md) | Worktree isolation, coordinator flow |
+| **Principles** | |
+| [principles/evidence-rules.md](principles/evidence-rules.md) | file:line citations, NO SAMPLING |
+| [principles/anti-patterns.md](principles/anti-patterns.md) | What NOT to do |
+| [principles/experimentation.md](principles/experimentation.md) | How to test new mechanics |
+| **Learnings** | |
+| [learnings/proven-claims.md](learnings/proven-claims.md) | What we've validated with evidence |
+| **Operations** | |
+| [operations/launcher.md](operations/launcher.md) | How to start orchestrators, hook installation |
