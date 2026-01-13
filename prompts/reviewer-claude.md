@@ -51,6 +51,9 @@ POSITIVE OBSERVATIONS:
 VERDICT: [APPROVE / NEEDS_CHANGES]
 
 If NEEDS_CHANGES, list specific items that must be addressed.
+
+LEARNINGS (if any):
+[Flag any patterns, unexpected behaviors, or non-obvious findings worth capturing for future runs. If none, state "None".]
 ```
 
 ## Constraints

@@ -18,7 +18,7 @@ You are given an issue: **ISSUE_NUMBER**
 
 2. **Set up context directory**:
    ```bash
-   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/{outputs,reviews,dialog,iterations}
+   mkdir -p /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/{outputs,reviews,dialog,iterations,skills}
    ```
 
 3. **Fetch issue from GitHub**:
@@ -26,6 +26,12 @@ You are given an issue: **ISSUE_NUMBER**
    gh issue view ISSUE_NUMBER --json title,body --jq '"# " + .title + "\n\n" + .body' \
      > /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/issue.md
    ```
+
+4. **Load existing skills** (if any):
+   ```bash
+   ls /Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER/.claude/skills/*.md 2>/dev/null
+   ```
+   Read any existing skill files - these contain learnings from previous runs. Inject relevant ones into sub-agent prompts to avoid repeated failures.
 
 ### Phase 2: Implementation Loop
 
@@ -119,17 +125,58 @@ git commit -m "feat: implement issue #ISSUE_NUMBER
 [Description of what was implemented]"
 ```
 
-#### Report to coordinator (REQUIRED):
+### Phase 4: Learning Extraction (REQUIRED)
+
+Before reporting, review the entire run for learnings worth capturing:
+
+#### 4.1 Identify Learnings
+
+Look for:
+1. **Failure-then-success patterns** - What failed? What eventually worked? Why?
+2. **Unexpected behaviors** - CLI quirks, flag requirements, timing issues
+3. **Non-obvious techniques** - Approaches that worked but weren't documented
+
+#### 4.2 Write Skill Files
+
+For each learning worth preserving, write to `.claude/skills/{descriptive-name}.md`:
+
+```markdown
+# skill-name
+
+Brief description of when this applies.
+
+## Key Points
+- Concise instruction 1
+- Concise instruction 2
+
+## Example
+```bash
+correct invocation here
+```
+
+## Common Errors
+| Error | Cause | Fix |
+|-------|-------|-----|
+| error message | root cause | solution |
+```
+
+**Guidelines:**
+- Only capture learnings that would save future agents from wasted attempts
+- Be ultra-concise - no filler, no obvious things
+- Include concrete examples and error messages
+- One skill per file, descriptive filename
+
+#### 4.3 Report to Coordinator (REQUIRED)
 
 ```
 ORCHESTRATOR REPORT: Issue #ISSUE_NUMBER
 
 STATUS: [SUCCESS | ESCALATED]
 
-TURN COUNTS:
-- Reviewer 1 (Claude Opus 4.5): X turns
-- Reviewer 2 (GPT-5.2 high): Y turns
-- Reviewer 3 (GPT-5.2-codex): Z turns
+INTERACTION DIAGRAM:
+Orchestrator ──spawn──▶ Implementer
+Implementer ──output──▶ Orchestrator
+[... show each interaction in order ...]
 
 CONCERNS RAISED:
 1. [Concern description]
@@ -139,6 +186,11 @@ CONCERNS RAISED:
 2. [Next concern...]
 
 ITERATIONS: N
+
+SKILLS CREATED:
+- .claude/skills/skill-name-1.md - [one-line description]
+- .claude/skills/skill-name-2.md - [one-line description]
+(or "None - no novel learnings from this run")
 
 FINAL OUTCOME:
 - [If SUCCESS] Branch: feature/ISSUE_NUMBER, Commit: [hash]

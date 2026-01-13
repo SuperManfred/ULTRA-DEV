@@ -48,6 +48,9 @@ ACCEPTANCE CRITERIA STATUS:
 
 NOTES FOR REVIEWERS:
 [Anything reviewers should pay attention to]
+
+LEARNINGS (if any):
+[Flag any failure-then-success patterns, unexpected behaviors, or CLI quirks discovered during implementation. The orchestrator will capture these as skills for future runs. If none, state "None".]
 ```
 
 ## Constraints

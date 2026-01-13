@@ -61,6 +61,9 @@ POSITIVE OBSERVATIONS:
 VERDICT: [APPROVE / REJECT]
 
 If REJECT, list specific items that must be addressed with file:line citations.
+
+LEARNINGS (if any):
+[Flag any patterns, unexpected behaviors, or non-obvious findings worth capturing for future runs. If none, state "None".]
 ```
 
 ## Constraints
