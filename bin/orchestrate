@@ -2,12 +2,15 @@
 #
 # orchestrate - Run an orchestrator for a GitHub issue
 #
-# Usage: orchestrate <issue-number>
+# Usage: orchestrate <issue-number> [--happy]
 #
 # This:
 # 1. Creates a worktree for the issue
 # 2. Writes CLAUDE.local.md with orchestrator context
-# 3. Opens a new Terminal window with interactive `c` session
+# 3. Opens a new Terminal window with interactive Claude session
+#
+# Options:
+#   --happy    Use Happy Coder (h) instead of Claude (c) for mobile sync
 #
 # The orchestrator can then approve commands and interact with you.
 #
@@ -26,16 +29,41 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 }
 REPO_NAME="$(basename "$REPO_ROOT")"
 
-if [ -z "$1" ]; then
-    echo "Usage: orchestrate <issue-number>"
+# Parse arguments
+ISSUE_NUMBER=""
+USE_HAPPY=false
+
+for arg in "$@"; do
+    case $arg in
+        --happy)
+            USE_HAPPY=true
+            ;;
+        *)
+            if [ -z "$ISSUE_NUMBER" ]; then
+                ISSUE_NUMBER="$arg"
+            fi
+            ;;
+    esac
+done
+
+# Determine CLI command based on --happy flag
+if [ "$USE_HAPPY" = true ]; then
+    CLI_CMD="h"
+    CLI_NAME="Happy Coder"
+else
+    CLI_CMD="c"
+    CLI_NAME="Claude"
+fi
+
+if [ -z "$ISSUE_NUMBER" ]; then
+    echo "Usage: orchestrate <issue-number> [--happy]"
     echo ""
     echo "Example: orchestrate 9"
+    echo "         orchestrate 9 --happy   # Use Happy Coder for mobile sync"
     echo ""
     echo "Run from any git repo directory. Current repo: $REPO_NAME"
     exit 1
 fi
-
-ISSUE_NUMBER="$1"
 # Use parent directory of REPO_ROOT, normalize to avoid .. in path
 PARENT_DIR="$(cd "$REPO_ROOT/.." && pwd)"
 WORKTREE_PATH="$PARENT_DIR/$REPO_NAME-wt-$ISSUE_NUMBER"
@@ -77,13 +105,8 @@ else
     ' > "$WORKTREE_PATH/.claude/issue.md"
 fi
 
-# Determine prompts directory - use repo's prompts if they exist, otherwise fall back to ULTRA-DEV
-if [ -f "$REPO_ROOT/prompts/orchestrator.md" ]; then
-    PROMPTS_DIR="$REPO_ROOT/prompts"
-else
-    PROMPTS_DIR="$ULTRA_DEV_ROOT/prompts"
-    echo "Note: Using ULTRA-DEV prompts (no prompts/ found in $REPO_NAME)"
-fi
+# Prompts always come from ULTRA-DEV (orchestration process is repo-agnostic)
+PROMPTS_DIR="$ULTRA_DEV_ROOT/prompts"
 
 # Read orchestrator prompt and substitute issue number
 ORCHESTRATOR_PROMPT=$(cat "$PROMPTS_DIR/orchestrator.md" | sed "s/ISSUE_NUMBER/$ISSUE_NUMBER/g")
@@ -119,17 +142,18 @@ CLAUDEEOF
 echo ""
 echo "Worktree ready at: $WORKTREE_PATH"
 echo "Repository: $REPO_NAME"
+echo "CLI: $CLI_NAME ($CLI_CMD)"
 echo "CLAUDE.local.md written with orchestrator context"
 echo ""
 echo "Opening new Terminal window..."
 
-# Open new Terminal window with interactive claude session
+# Open new Terminal window with interactive session
 # ORCHESTRATOR_MODE enables hooks that constrain the orchestrator
 osascript << EOF
 tell application "Terminal"
     activate
-    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && export ORCHESTRATOR_MODE=true && echo 'Orchestrator for Issue #$ISSUE_NUMBER ($REPO_NAME)' && echo 'Worktree: $WORKTREE_PATH' && echo 'Mode: CONSTRAINED (hooks active)' && echo '' && c"
+    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && export ORCHESTRATOR_MODE=true && echo 'Orchestrator for Issue #$ISSUE_NUMBER ($REPO_NAME)' && echo 'Worktree: $WORKTREE_PATH' && echo 'CLI: $CLI_NAME' && echo 'Mode: CONSTRAINED (hooks active)' && echo '' && $CLI_CMD"
 end tell
 EOF
 
-echo "Done. Terminal window opened with interactive Claude session."
+echo "Done. Terminal window opened with $CLI_NAME session."
