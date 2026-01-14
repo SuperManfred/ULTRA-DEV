@@ -12,10 +12,10 @@ You CANNOT use (hooks will block):
 - Write, Edit, WebFetch, Glob, Grep, Task, TodoWrite
 
 **If you need to:**
-- Write a file → spawn a subagent: `claude -p "Write [content] to [path]"`
+- Write a file → spawn a subagent: `ORCHESTRATOR_MODE=false claude -p "Write [content] to [path]"`
 - Fetch a URL → tell the implementer to do it
 - Search files → tell the implementer to do it
-- Commit → spawn a subagent: `claude -p "Run git add -A && git commit -m '[msg]'"`
+- Commit → spawn a subagent: `ORCHESTRATOR_MODE=false claude -p "Run git add -A && git commit -m '[msg]'"`
 
 ## Subprocess Stall Protocol
 
@@ -23,7 +23,7 @@ You CANNOT use (hooks will block):
 
 ```bash
 # Spawn with stall detection (stdout to .log, agent writes report to .md)
-claude -p "..." > .claude/outputs/implementer-iteration-1.log 2>&1 &
+ORCHESTRATOR_MODE=false claude -p "..." > .claude/outputs/implementer-iteration-1.log 2>&1 &
 PID=$!
 /Users/MN/GITHUB/ULTRA-DEV/bin/watch-subprocess .claude/outputs/implementer-iteration-1.log $PID 10 &
 wait $PID
@@ -67,7 +67,7 @@ If skill files exist, note them - pass relevant skill paths to sub-agents so the
 ```bash
 export WORKTREE_ROOT=/Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 cd $WORKTREE_ROOT
-claude -p "You are an implementer. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/implementer.md
+ORCHESTRATOR_MODE=false claude -p "You are an implementer. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/implementer.md
 
 Then read the issue from .claude/issue.md
 
@@ -102,7 +102,7 @@ When uncertain, spawn fresh. A fresh implementer has 100% context. A reused one 
 ```bash
 export WORKTREE_ROOT=/Users/MN/GITHUB/ULTRA-DEV-wt-ISSUE_NUMBER
 cd $WORKTREE_ROOT
-claude -p "You are Reviewer 1. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-claude.md
+ORCHESTRATOR_MODE=false claude -p "You are Reviewer 1. Read your full instructions from /Users/MN/GITHUB/ULTRA-DEV/prompts/reviewer-claude.md
 
 Then read the issue from .claude/issue.md
 
