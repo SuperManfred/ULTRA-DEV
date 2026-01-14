@@ -11,23 +11,34 @@
 #
 # The orchestrator can then approve commands and interact with you.
 #
+# Works from any git repository - uses current working directory to detect repo.
+#
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ULTRA_DEV_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Detect repo from current working directory
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    echo "Error: Not in a git repository"
+    exit 1
+}
+REPO_NAME="$(basename "$REPO_ROOT")"
 
 if [ -z "$1" ]; then
     echo "Usage: orchestrate <issue-number>"
     echo ""
     echo "Example: orchestrate 9"
+    echo ""
+    echo "Run from any git repo directory. Current repo: $REPO_NAME"
     exit 1
 fi
 
 ISSUE_NUMBER="$1"
 # Use parent directory of REPO_ROOT, normalize to avoid .. in path
 PARENT_DIR="$(cd "$REPO_ROOT/.." && pwd)"
-WORKTREE_PATH="$PARENT_DIR/ULTRA-DEV-wt-$ISSUE_NUMBER"
+WORKTREE_PATH="$PARENT_DIR/$REPO_NAME-wt-$ISSUE_NUMBER"
 
 # Check if issue exists
 if ! gh issue view "$ISSUE_NUMBER" &>/dev/null; then
@@ -66,19 +77,27 @@ else
     ' > "$WORKTREE_PATH/.claude/issue.md"
 fi
 
+# Determine prompts directory - use repo's prompts if they exist, otherwise fall back to ULTRA-DEV
+if [ -f "$REPO_ROOT/prompts/orchestrator.md" ]; then
+    PROMPTS_DIR="$REPO_ROOT/prompts"
+else
+    PROMPTS_DIR="$ULTRA_DEV_ROOT/prompts"
+    echo "Note: Using ULTRA-DEV prompts (no prompts/ found in $REPO_NAME)"
+fi
+
 # Read orchestrator prompt and substitute issue number
-ORCHESTRATOR_PROMPT=$(cat "$REPO_ROOT/prompts/orchestrator.md" | sed "s/ISSUE_NUMBER/$ISSUE_NUMBER/g")
+ORCHESTRATOR_PROMPT=$(cat "$PROMPTS_DIR/orchestrator.md" | sed "s/ISSUE_NUMBER/$ISSUE_NUMBER/g")
 
 # Write CLAUDE.local.md - Claude will read this automatically
 cat > "$WORKTREE_PATH/CLAUDE.local.md" << CLAUDEEOF
 # Orchestrator Context for Issue #$ISSUE_NUMBER
 
-You are an orchestrator for this issue. Read prompts/orchestrator.md for full instructions.
+You are an orchestrator for this issue in the **$REPO_NAME** repository.
 
 ## Quick Reference
 
 1. The issue is in: .claude/issue.md
-2. Spawn implementer with: \`claude -p "\$(cat $REPO_ROOT/prompts/implementer.md)..."\`
+2. Spawn implementer with: \`claude -p "\$(cat $PROMPTS_DIR/implementer.md)..."\`
 3. Spawn reviewers with: \`claude -p\` and \`codex exec\`
 4. Track dialog in: .claude/dialog/
 5. **DO NOT COMMIT** - produce artifacts and report only
@@ -99,6 +118,7 @@ CLAUDEEOF
 
 echo ""
 echo "Worktree ready at: $WORKTREE_PATH"
+echo "Repository: $REPO_NAME"
 echo "CLAUDE.local.md written with orchestrator context"
 echo ""
 echo "Opening new Terminal window..."
@@ -108,7 +128,7 @@ echo "Opening new Terminal window..."
 osascript << EOF
 tell application "Terminal"
     activate
-    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && export ORCHESTRATOR_MODE=true && echo 'Orchestrator for Issue #$ISSUE_NUMBER' && echo 'Worktree: $WORKTREE_PATH' && echo 'Mode: CONSTRAINED (hooks active)' && echo '' && c"
+    do script "cd '$WORKTREE_PATH' && export WORKTREE_ROOT='$WORKTREE_PATH' && export ORCHESTRATOR_MODE=true && echo 'Orchestrator for Issue #$ISSUE_NUMBER ($REPO_NAME)' && echo 'Worktree: $WORKTREE_PATH' && echo 'Mode: CONSTRAINED (hooks active)' && echo '' && c"
 end tell
 EOF
 
