@@ -41,6 +41,8 @@ Opinions without evidence are dismissed.
 
 ## Output Format
 
+**IMPORTANT:** When finished, use the Write tool to save your report to the path specified in your spawn prompt (e.g., `.claude/reviews/reviewer-2-round-1.md`). This is the ONLY output the orchestrator reads.
+
 ```
 REVIEWER-2 REPORT (GPT-5.2 high)
 

@@ -31,6 +31,8 @@ Opinions without evidence are dismissed.
 
 ## Output Format
 
+**IMPORTANT:** When finished, use the Write tool to save your report to the path specified in your spawn prompt (e.g., `.claude/reviews/reviewer-1-round-1.md`). This is the ONLY output the orchestrator reads.
+
 ```
 REVIEWER-1 REPORT (Claude Opus 4.5)
 

@@ -22,11 +22,12 @@ You CANNOT use (hooks will block):
 **Detection:** Use `watch-subprocess` to monitor output file growth.
 
 ```bash
-# Spawn with stall detection
-claude -p "..." > .claude/outputs/implementer-iteration-1.txt 2>&1 &
+# Spawn with stall detection (stdout to .log, agent writes report to .md)
+claude -p "..." > .claude/outputs/implementer-iteration-1.log 2>&1 &
 PID=$!
-/Users/MN/GITHUB/ULTRA-DEV/bin/watch-subprocess .claude/outputs/implementer-iteration-1.txt $PID 10 &
+/Users/MN/GITHUB/ULTRA-DEV/bin/watch-subprocess .claude/outputs/implementer-iteration-1.log $PID 10 &
 wait $PID
+# Read the structured report from .md, not the verbose .log
 ```
 
 **If subprocess stalls (no output for 10 minutes):**
@@ -72,11 +73,11 @@ Then read the issue from .claude/issue.md
 
 If this is not iteration 1, read .claude/iterations/iteration-N-spec.md for specific requirements.
 
-Write your complete output to .claude/outputs/implementer-iteration-N.txt before finishing.
-" > .claude/outputs/implementer-iteration-N.txt 2>&1
+When done, write your IMPLEMENTER REPORT to .claude/outputs/implementer-iteration-N.md
+" > .claude/outputs/implementer-iteration-N.log 2>&1
 ```
 
-Read the output file to understand what was implemented.
+Read `.claude/outputs/implementer-iteration-N.md` (the structured report, not the verbose .log).
 
 #### 2.1.1 Implementer Context Management
 
@@ -105,8 +106,8 @@ claude -p "You are Reviewer 1. Read your full instructions from /Users/MN/GITHUB
 
 Then read the issue from .claude/issue.md
 
-Write your complete review to .claude/reviews/reviewer-1-round-N.txt before finishing.
-" > .claude/reviews/reviewer-1-round-N.txt 2>&1
+When done, write your REVIEWER-1 REPORT to .claude/reviews/reviewer-1-round-N.md
+" > .claude/reviews/reviewer-1-round-N.log 2>&1
 ```
 
 **Reviewer 2 (GPT-5.2 high):** (run AFTER reviewer 1, not parallel - auth conflicts)
@@ -117,8 +118,8 @@ codex exec -m gpt-5.2 -c model_reasoning_effort="high" --skip-git-repo-check -s 
 
 Then read the issue from .claude/issue.md
 
-Write your complete review to .claude/reviews/reviewer-2-round-N.txt before finishing.
-" > .claude/reviews/reviewer-2-round-N.txt 2>&1
+When done, write your REVIEWER-2 REPORT to .claude/reviews/reviewer-2-round-N.md
+" > .claude/reviews/reviewer-2-round-N.log 2>&1
 ```
 
 **Reviewer 3 (GPT-5.2-codex):** (run AFTER reviewer 2)
@@ -129,11 +130,11 @@ codex exec -m gpt-5.2-codex --skip-git-repo-check -s read-only \
 
 Then read the issue from .claude/issue.md
 
-Write your complete review to .claude/reviews/reviewer-3-round-N.txt before finishing.
-" > .claude/reviews/reviewer-3-round-N.txt 2>&1
+When done, write your REVIEWER-3 REPORT to .claude/reviews/reviewer-3-round-N.md
+" > .claude/reviews/reviewer-3-round-N.log 2>&1
 ```
 
-Read all review outputs.
+Read `.claude/reviews/reviewer-{1,2,3}-round-N.md` (structured reports, not verbose .log files).
 
 #### 2.3 Dialog Protocol
 

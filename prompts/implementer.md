@@ -29,6 +29,8 @@ Don't guess on critical decisions. Don't produce slop because a question wasn't 
 
 ## Output Format
 
+**IMPORTANT:** When finished, use the Write tool to save your report to the path specified in your spawn prompt (e.g., `.claude/outputs/implementer-iteration-1.md`). This is the ONLY output the orchestrator reads.
+
 ```
 IMPLEMENTER REPORT
 
