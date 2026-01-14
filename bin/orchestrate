@@ -53,10 +53,17 @@ else
     mkdir -p "$WORKTREE_PATH/.claude/dialog"
     mkdir -p "$WORKTREE_PATH/.claude/iterations"
 
-    # Fetch issue from GitHub
+    # Fetch issue from GitHub (body + comments)
     echo "Fetching issue #$ISSUE_NUMBER from GitHub..."
-    gh issue view "$ISSUE_NUMBER" --json title,body --jq '"# " + .title + "\n\n" + .body' \
-        > "$WORKTREE_PATH/.claude/issue.md"
+    gh issue view "$ISSUE_NUMBER" --json title,body,comments --jq '
+        "# " + .title + "\n\n" + .body +
+        if (.comments | length) > 0 then
+            "\n\n---\n\n## Issue Comments\n\n" +
+            ([.comments[] | "### Comment by " + .author.login + " (" + .createdAt[0:10] + ")\n\n" + .body] | join("\n\n---\n\n"))
+        else
+            ""
+        end
+    ' > "$WORKTREE_PATH/.claude/issue.md"
 fi
 
 # Read orchestrator prompt and substitute issue number
