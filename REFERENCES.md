@@ -10,7 +10,13 @@ Human reference only. Agents: do not read unless explicitly asked.
 
 ## Multi-Agent Patterns
 
+- [Ralph - AI Agent Architecture](https://ghuntley.com/ralph/)
+- [Getting Started with Ralph](https://www.aihero.dev/getting-started-with-ralph)
+- [Tips for AI Coding with Ralph Wiggum](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum)
+
 ## Anthropic / Claude
+
+- [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 
 ## Research Papers
 
